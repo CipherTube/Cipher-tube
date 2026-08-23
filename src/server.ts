@@ -136,16 +136,45 @@ export const PRE_RENDERED_STYLES = `
         font-weight: 500;
         margin-bottom: 0.5rem;
     }
+    .input-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+        max-width: 300px;
+    }
     #user-id-input {
         background: var(--bg-color);
         border: 1px solid var(--border-color);
         color: var(--text-color);
-        padding: 8px 12px;
+        padding: 8px 28px 8px 12px;
         border-radius: 6px;
         font-size: 1rem;
         width: 100%;
-        max-width: 300px;
         transition: border-color 0.2s;
+        box-sizing: border-box;
+    }
+    .clear-btn {
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--text-color);
+        opacity: 0.6;
+        cursor: pointer;
+        padding: 2px 6px;
+        font-size: 0.875rem;
+        border-radius: 50%;
+        display: none;
+        line-height: 1;
+        transition: opacity 0.2s, background-color 0.2s;
+    }
+    .clear-btn:hover { opacity: 1; background: rgba(0, 0, 0, 0.1); }
+    [data-theme='dark'] .clear-btn:hover { background: rgba(255, 255, 255, 0.1); }
+    .clear-btn:focus-visible {
+        outline: 2px solid var(--primary);
+        opacity: 1;
     }
     .theme-icon {
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -230,7 +259,6 @@ export const PRE_RENDERED_STYLES = `
     .copy-button.copied .check-icon { display: block; }
     .input-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
     .input-group label { font-size: 0.875rem; font-weight: 500; }
-    .input-group input { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 12px; border-radius: 6px; font-size: 0.875rem; width: 100%; max-width: 300px; }
     .counter-container { display: flex; justify-content: space-between; max-width: 300px; align-items: baseline; flex-wrap: wrap; gap: 8px; }
     #user-id-counter { font-size: 0.75rem; opacity: 0.7; }
     #user-id-counter.near-limit { color: #d63031; opacity: 1; font-weight: bold; }
@@ -616,16 +644,45 @@ app.get("/", (req: Request, res: Response) => {
                     font-weight: 500;
                     margin-bottom: 0.5rem;
                 }
+                .input-wrapper {
+                    position: relative;
+                    display: inline-block;
+                    width: 100%;
+                    max-width: 300px;
+                }
                 #user-id-input {
                     background: var(--bg-color);
                     border: 1px solid var(--border-color);
                     color: var(--text-color);
-                    padding: 8px 12px;
+                    padding: 8px 28px 8px 12px;
                     border-radius: 6px;
                     font-size: 1rem;
                     width: 100%;
-                    max-width: 300px;
                     transition: border-color 0.2s;
+                    box-sizing: border-box;
+                }
+                .clear-btn {
+                    position: absolute;
+                    right: 6px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: none;
+                    border: none;
+                    color: var(--text-color);
+                    opacity: 0.6;
+                    cursor: pointer;
+                    padding: 2px 6px;
+                    font-size: 0.875rem;
+                    border-radius: 50%;
+                    display: none;
+                    line-height: 1;
+                    transition: opacity 0.2s, background-color 0.2s;
+                }
+                .clear-btn:hover { opacity: 1; background: rgba(0, 0, 0, 0.1); }
+                [data-theme='dark'] .clear-btn:hover { background: rgba(255, 255, 255, 0.1); }
+                .clear-btn:focus-visible {
+                    outline: 2px solid var(--primary);
+                    opacity: 1;
                 }
                 .theme-icon {
                     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -710,7 +767,6 @@ app.get("/", (req: Request, res: Response) => {
                 .copy-button.copied .check-icon { display: block; }
                 .input-group { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
                 .input-group label { font-size: 0.875rem; font-weight: 500; }
-                .input-group input { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); padding: 8px 12px; border-radius: 6px; font-size: 0.875rem; width: 100%; max-width: 300px; }
                 .counter-container { display: flex; justify-content: space-between; max-width: 300px; align-items: baseline; flex-wrap: wrap; gap: 8px; }
                 #user-id-counter { font-size: 0.75rem; opacity: 0.7; }
                 #user-id-counter.near-limit { color: #d63031; opacity: 1; font-weight: bold; }
@@ -894,7 +950,10 @@ app.get("/", (req: Request, res: Response) => {
                         <label for="user-id-input">Customize your User ID: <kbd aria-hidden="true" class="kb-shortcut">/</kbd></label>
                         <span id="user-id-counter" aria-live="polite">0 of 128 characters used</span>
                     </div>
-                    <input type="text" id="user-id-input" placeholder="demo-user" maxlength="128" spellcheck="false" aria-describedby="user-id-counter" aria-keyshortcuts="/">
+                    <div class="input-wrapper">
+                        <input type="text" id="user-id-input" placeholder="demo-user" maxlength="128" spellcheck="false" aria-describedby="user-id-counter" aria-keyshortcuts="/">
+                        <button type="button" id="clear-user-id-btn" class="clear-btn" aria-label="Clear User ID" title="Clear User ID">✕</button>
+                    </div>
                 </div>
                 <div class="input-row">
                     <button id="create-session-btn" aria-keyshortcuts="s" aria-busy="false">
@@ -995,6 +1054,7 @@ app.get("/", (req: Request, res: Response) => {
                 const curlCommand = document.getElementById('curl-command');
                 const userIdInput = document.getElementById('user-id-input');
                 const userIdCounter = document.getElementById('user-id-counter');
+                const clearUserIdBtn = document.getElementById('clear-user-id-btn');
                 const createSessionBtn = document.getElementById('create-session-btn');
 
                 function updateCurlCommand() {
@@ -1014,6 +1074,18 @@ app.get("/", (req: Request, res: Response) => {
                     } else {
                         userIdCounter.classList.remove('near-limit');
                     }
+
+                    if (clearUserIdBtn) {
+                        clearUserIdBtn.style.display = length > 0 ? 'block' : 'none';
+                    }
+                }
+
+                if (clearUserIdBtn) {
+                    clearUserIdBtn.addEventListener('click', () => {
+                        userIdInput.value = '';
+                        updateCurlCommand();
+                        userIdInput.focus();
+                    });
                 }
 
                 userIdInput.addEventListener('input', updateCurlCommand);

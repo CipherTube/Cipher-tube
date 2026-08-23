@@ -133,4 +133,12 @@ describe("Server Security and Health", () => {
     expect(response.text).toContain("outline: 3px solid var(--primary);");
     expect(response.text).toContain("outline-offset: 2px;");
   });
+
+  it("should render an accessible clear button for user-id-input", async () => {
+    const response = await request(app).get("/");
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('id="clear-user-id-btn"');
+    expect(response.text).toContain('aria-label="Clear User ID"');
+    expect(response.text).toContain("clearUserIdBtn.addEventListener('click'");
+  });
 });
