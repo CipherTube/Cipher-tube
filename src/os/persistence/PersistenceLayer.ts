@@ -18,7 +18,7 @@ export class PersistenceLayer {
         // Bolt Optimization: Allocate pre-sized buffer to eliminate Buffer.concat and intermediate allocations
         const out = Buffer.allocUnsafe(HEADER_LENGTH + SIGNATURE_LENGTH + payloadByteLength);
 
-        // Zero-copy set of pre-allocated header
+        // Set pre-allocated header
         out.set(HEADER_MAGIC, 0);
 
         // Direct UTF-8 write of the payload to avoid intermediate Buffer allocation
