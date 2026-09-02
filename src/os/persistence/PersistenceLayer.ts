@@ -15,20 +15,22 @@ export class PersistenceLayer {
         const payload = JSON.stringify(data);
         const payloadByteLength = Buffer.byteLength(payload, 'utf8');
 
-        // Compute HMAC signature on payload string directly
+        // Bolt Optimization: Allocate pre-sized buffer to eliminate Buffer.concat and intermediate allocations
+        const out = Buffer.allocUnsafe(HEADER_LENGTH + SIGNATURE_LENGTH + payloadByteLength);
+
+        // Set pre-allocated header
+        out.set(HEADER_MAGIC, 0);
+
+        // Direct UTF-8 write of the payload to avoid intermediate Buffer allocation
+        out.write(payload, HEADER_LENGTH + SIGNATURE_LENGTH, payloadByteLength, 'utf8');
+
+        // Compute HMAC signature directly from string payload without intermediate buffer
         const hmac = crypto.createHmac('sha256', key);
         hmac.update(payload);
         const signature = hmac.digest();
 
-        // Secure buffer allocation to prevent uninitialized memory leakage
-        const out = Buffer.alloc(HEADER_LENGTH + SIGNATURE_LENGTH + payloadByteLength);
-
-        // Set pre-allocated header
-        out.set(HEADER_MAGIC, 0);
-        // Set hmac signature
+        // Zero-copy set of hmac signature
         out.set(signature, HEADER_LENGTH);
-        // Direct UTF-8 write of the payload
-        out.write(payload, HEADER_LENGTH + SIGNATURE_LENGTH, payloadByteLength, 'utf8');
 
         return out;
     }
