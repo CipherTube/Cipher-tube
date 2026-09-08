@@ -158,3 +158,36 @@ No vendor lock-in dependencies introduced. Device telemetry, if added later, sho
 ---
 
 *Draft generated 2026-09-08 · CypherTube Autonomous Architecture Node*
+
+
+---
+
+## 9. Mobile Deployment Details (addendum — 2026-09-08)
+
+### 9.1 Distribution channels
+- **Primary:** signed release APK via direct download from the gateway (sideload)
+- **Optional, deferred:** Google Play via AAB with Play App Signing (requires Play policy review + data-safety declaration; note Play re-signs, so retain the local key for the sideload channel)
+- **Web:** PWA installs direct from the gateway origin
+
+### 9.2 Signing & keystore management
+- Dedicated release keystore per environment (dev / staging / prod)
+- Stored only as encrypted GitHub Actions secrets (base64 + passphrase); never committed to the repo
+- v2 + v3 APK signature schemes; documented rotation procedure from day one
+- Gateway publishes SHA-256 pins of release certs (ties into §7 cert-pinning risk)
+
+### 9.3 Versioning
+- semver (x.y.z) for the app bundle + integer `versionCode` incremented per release
+- `versionName` maps to platform releases (v1.6.0 → versionCode 10600)
+- Release notes generated from conventional commits
+
+### 9.4 Environments & staged rollout
+- Build variants: `dev` (staging gateway), `staging`, `production`
+- Rollout stages: internal QA → closed beta → production 10% → 50% → 100%
+- **Sideload update mechanism:** signed update-manifest endpoint on the gateway (`versionCode` + APK SHA-256 + download URL); client verifies signature before prompting install
+- PWA updates via service-worker versioning
+
+### 9.5 Backend readiness gate (must be live before first public APK)
+- Production gateway deployed with TLS 1.3 and valid certs
+- `/health` + `/ready` endpoints live
+- Mobile-specific rate-limit buckets tuned
+- Update-manifest endpoint operational
