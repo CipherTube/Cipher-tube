@@ -647,6 +647,7 @@ app.get("/", (req: Request, res: Response) => {
                 <p>&copy; 2026 Sovereign Cypher-Tube</p>
             </footer>
 
+            <script src="/ui/offline-cache.js"></script>
             <script src="/ui/app.js"></script>
         </body>
         </html>
