@@ -1,0 +1,11 @@
+{
+  "name": "CypherTube",
+  "short_name": "CypherTube",
+  "description": "Sovereign Cypher-Tube client",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#007bff",
+  "icons": []
+}
