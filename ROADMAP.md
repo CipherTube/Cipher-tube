@@ -15,7 +15,7 @@ Consolidated project roadmap. Last updated: 2026-09-09. Current tag: [v1.6.0-alp
 
 | Phase | Scope | Status |
 |-------|-------|--------|
-| 0 | UI extraction from `src/server.ts`; `/health` + `/ready` | ✅ health/readiness endpoints live (2026-09-09) · ⬜ UI extraction pending |
+| 0 | UI extraction from `src/server.ts`; `/health` + `/ready` | ✅ complete (2026-09-09) — styles/scripts externalized to `ui/public/`, server.ts 69KB→38KB, dynamic SSR blocks (aura/cosmology/seasonal) retained |
 | 1 | Web/PWA: manifest, service worker, encrypted IndexedDB cache | ⬜ pending — assets scaffolded (`ui/manifest.webmanifest`, `ui/sw.js`) |
 | 2 | Android APK: Capacitor, Keystore token store, SQLCipher, signed build | 🟡 scaffolded (`mobile/`) — needs Phase 0 + release keystore CI secret |
 | 3 | Desktop: Electron + safeStorage | ⬜ pending |
