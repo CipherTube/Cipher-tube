@@ -18,7 +18,7 @@ Consolidated project roadmap. Last updated: 2026-09-09. Current tag: [v1.6.0-alp
 | 0 | UI extraction from `src/server.ts`; `/health` + `/ready` | ✅ complete (2026-09-09) — styles/scripts externalized to `ui/public/`, server.ts 69KB→38KB, dynamic SSR blocks (aura/cosmology/seasonal) retained |
 | 1 | Web/PWA: manifest, service worker, encrypted IndexedDB cache | ✅ complete (2026-09-09) — manifest + SW + icons + encrypted offline cache with operation queue |
 | 2 | Android APK: Capacitor, Keystore token store, SQLCipher, signed build | 🟡 scaffolded (`mobile/`) — needs Phase 0 + release keystore CI secret |
-| 3 | Desktop: Electron + safeStorage | 🟡 config live (2026-09-09) — main/preload/package ready; notarization + signing keys pending |
+| 3 | Desktop: Electron + safeStorage | 🟡 complete pending signing certs — hardened main, preload bridge, safeStorage store, cert pinning (fail-closed), CI builds configured |
 | 4 | Hardening + staged rollout (10% → 50% → 100%) | ⬜ pending |
 
 Rollout checklist: [#466](https://github.com/CipherTube/Cipher-tube/issues/466) · Build pipeline: [BUILD.md](./BUILD.md)
@@ -29,6 +29,13 @@ Rollout checklist: [#466](https://github.com/CipherTube/Cipher-tube/issues/466) 
 2. **Phase 0 UI extraction** into static `ui/` bundle
 3. First installable build → tag `v1.6.0-beta.1`
 4. Production release gates (PLATFORM_SHIP_PLAN.md §9.5) → `v1.6.0`
+
+## CI Build Pipeline (2026-09-09)
+
+- ✅ `ci-workflows/ci-build.yml` — build verification: desktop (linux/mac/win) + android debug APK
+- ✅ `ci-workflows/release.yml` — tag-triggered signed builds + GitHub Release publish (secrets documented, none committed)
+- ⬜ One-time activation: copy both files into `.github/workflows/` via the GitHub UI (connector token lacks the `workflow` scope required for API writes there)
+- ⬜ Add signing secrets (see ci-workflows/README.md)
 
 ## Release Tags
 
