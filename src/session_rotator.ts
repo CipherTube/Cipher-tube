@@ -1,6 +1,14 @@
 import crypto from 'crypto';
 import { fastHash } from './cta';
 import { RedisClientType } from 'redis';
+import {
+    SessionPayload,
+    SESSION_PAYLOAD_VERSION,
+    serializePayload,
+    deserializePayload,
+    migrateLegacySession,
+    LegacySessionError,
+} from './session/payload';
 
 /**
  * Calculates a blinded hash for a given session ID or token.
@@ -38,35 +46,88 @@ export function getRedisKeyFromHash(blindedHash: string): string {
 
 /**
  * Creates a new session in Redis and returns the raw token.
+ * Priority 1: stores a versioned SessionPayload (v1 JSON) instead of a raw userId.
  */
-export async function createSession(userId: string, redis: RedisClientType, ttl: number): Promise<string> {
+export async function createSession(
+    userId: string,
+    redis: RedisClientType,
+    ttl: number,
+    scopes: string[] = []
+): Promise<string> {
     const token = crypto.randomUUID();
     const key = getBlindedRedisKey(token);
-    await redis.set(key, userId, { EX: ttl });
+    const payload: SessionPayload = {
+        v: SESSION_PAYLOAD_VERSION,
+        userId,
+        scopes,
+        issuedAt: Date.now(),
+        rotationCount: 0,
+    };
+    await redis.set(key, serializePayload(payload), { EX: ttl });
     return token;
 }
 
 /**
- * Rotates an existing session token.
- * Bolt Optimization: Implements a 5-second grace period for the old token to prevent race conditions
- * during rapid concurrent requests.
+ * Reads a session and returns its typed payload.
+ * Legacy v0 values (raw userId) are transparently migrated to v1 and
+ * written back to Redis, preserving the remaining TTL (lazy migration).
+ * Returns null when the key is absent or expired.
  */
-export async function rotateSession(oldToken: string, redis: RedisClientType, ttl: number): Promise<{ newToken: string }> {
-    const oldKey = getBlindedRedisKey(oldToken);
-    const userId = await redis.get(oldKey);
+export async function readSession(token: string, redis: RedisClientType): Promise<SessionPayload | null> {
+    const key = getBlindedRedisKey(token);
+    if (!key) return null;
+    const raw = await redis.get(key);
+    if (raw === null) return null;
+    try {
+        return deserializePayload(raw);
+    } catch (err) {
+        if (err instanceof LegacySessionError) {
+            const migrated = migrateLegacySession(raw);
+            const remainingTtl = await redis.ttl(key);
+            if (remainingTtl > 0) {
+                await redis.set(key, serializePayload(migrated), { EX: remainingTtl });
+            }
+            return migrated;
+        }
+        throw err;
+    }
+}
 
-    if (!userId) {
+/**
+ * Rotates an existing session token.
+ * Priority 1: rotation now increments rotationCount, records lineage
+ * (blinded hash of the old token) and carries scopes forward.
+ * Bolt Optimization: 5-second grace period on the old token preserved.
+ */
+export async function rotateSession(
+    oldToken: string,
+    redis: RedisClientType,
+    ttl: number
+): Promise<{ newToken: string; rotationCount: number }> {
+    const payload = await readSession(oldToken, redis);
+
+    if (!payload) {
         throw new Error("Session expired, revoked, or replayed.");
     }
 
-    // Create new token
-    const newToken = await createSession(userId, redis, ttl);
+    const newToken = crypto.randomUUID();
+    const newKey = getBlindedRedisKey(newToken);
+    const rotated: SessionPayload = {
+        v: SESSION_PAYLOAD_VERSION,
+        userId: payload.userId,
+        scopes: payload.scopes,
+        issuedAt: Date.now(),
+        rotatedFrom: blindToken(oldToken),
+        rotationCount: payload.rotationCount + 1,
+    };
+    await redis.set(newKey, serializePayload(rotated), { EX: ttl });
 
     // Burn old token with a 5-second grace period instead of immediate deletion
     // This allows in-flight requests with the old token to succeed.
+    const oldKey = getBlindedRedisKey(oldToken);
     await redis.expire(oldKey, 5);
 
-    return { newToken };
+    return { newToken, rotationCount: rotated.rotationCount };
 }
 
 /**
@@ -82,4 +143,3 @@ export function getSessionKeys(token: string): { blindedKey: string; redisKey: s
         redisKey: hashed ? `session:${hashed}` : ''
     };
 }
-
