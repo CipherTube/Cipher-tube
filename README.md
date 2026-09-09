@@ -122,3 +122,10 @@ For the full detailed assessment, see [`ASSESSMENT.md`](./ASSESSMENT.md).
 ## License
 
 MIT — © 2026 Sovereign Cypher-Tube.
+
+
+---
+
+## 🗺️ Roadmap
+
+The consolidated project roadmap lives in [ROADMAP.md](./ROADMAP.md) — the four build priorities ([#463](./issues/463)–[#465](./issues/465)) and the multi-platform distribution phases from [PLATFORM_SHIP_PLAN.md](./PLATFORM_SHIP_PLAN.md). Current tag: [v1.6.0-alpha.1](https://github.com/CipherTube/Cipher-tube/releases/tag/v1.6.0-alpha.1).
