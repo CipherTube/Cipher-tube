@@ -6,7 +6,7 @@ Consolidated project roadmap. Last updated: 2026-09-09. Current tag: [v1.6.0-alp
 
 | # | Priority | Tracking | Status |
 |---|----------|----------|--------|
-| P1 | Session token serialization (versioned SessionPayload, legacy v0 migration) | [TASK_PLAN_session_serialization.md](./TASK_PLAN_session_serialization.md) | Specced — implementation is the critical path |
+| P1 | Session token serialization (versioned SessionPayload, legacy v0 migration) | [TASK_PLAN_session_serialization.md](./TASK_PLAN_session_serialization.md) | ✅ implemented on `main` (2026-09-09) — pending team review |
 | P2 | Redis memory footprint & cache eviction policies | [#463](https://github.com/CipherTube/Cipher-tube/issues/463) | Open — may proceed in parallel with P1 |
 | P3 | Zero-downtime key rotation & handshake validation | [#464](https://github.com/CipherTube/Cipher-tube/issues/464) | Open — depends on P1 |
 | P4 | High-throughput metrics (Prometheus `/metrics`) | [#465](https://github.com/CipherTube/Cipher-tube/issues/465) | Open — depends on P1 |
@@ -35,3 +35,9 @@ Rollout checklist: [#466](https://github.com/CipherTube/Cipher-tube/issues/466) 
 - `v1.6.0-alpha.1` — multi-platform distribution scaffold (2026-09-08)
 - `v1.6.0-beta.1` — first installable build (planned)
 - `v1.6.0` — production (planned)
+
+## Governance & Compliance (2026-09-09)
+
+- ✅ Policy-as-code engine — `src/governance/policyEngine.ts` (allow / challenge / block, first-match-wins)
+- ✅ Hash-chained audit trail — `src/governance/auditTrail.ts` (tamper-evident, blinded actors)
+- Framework: [docs/GOVERNANCE_COMPLIANCE.md](./docs/GOVERNANCE_COMPLIANCE.md) — all-original CipherTube design, no third-party governance dependencies
