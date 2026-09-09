@@ -41,3 +41,4 @@ Rollout checklist: [#466](https://github.com/CipherTube/Cipher-tube/issues/466) 
 - ✅ Policy-as-code engine — `src/governance/policyEngine.ts` (allow / challenge / block, first-match-wins)
 - ✅ Hash-chained audit trail — `src/governance/auditTrail.ts` (tamper-evident, blinded actors)
 - Framework: [docs/GOVERNANCE_COMPLIANCE.md](./docs/GOVERNANCE_COMPLIANCE.md) — all-original CipherTube design, no third-party governance dependencies
+- ✅ Gateway wiring — `governanceGuard` live on `/system/analytics` + `/v1/channel/verify` (default-allow; set `CT_GOVERNANCE_RULES=baseline` to enforce)
