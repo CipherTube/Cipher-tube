@@ -302,3 +302,13 @@
                 }
 
                 resetTimer();
+
+// Phase 1 (PWA): register the service worker from site root (scope "/").
+// Guard: secure origins only; registration failure must never break the page.
+if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(window.location.hostname))) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.error('SW registration failed:', err);
+        });
+    });
+}
