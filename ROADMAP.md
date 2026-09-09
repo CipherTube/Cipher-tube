@@ -16,7 +16,7 @@ Consolidated project roadmap. Last updated: 2026-09-09. Current tag: [v1.6.0-alp
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 0 | UI extraction from `src/server.ts`; `/health` + `/ready` | ✅ complete (2026-09-09) — styles/scripts externalized to `ui/public/`, server.ts 69KB→38KB, dynamic SSR blocks (aura/cosmology/seasonal) retained |
-| 1 | Web/PWA: manifest, service worker, encrypted IndexedDB cache | ⬜ pending — assets scaffolded (`ui/manifest.webmanifest`, `ui/sw.js`) |
+| 1 | Web/PWA: manifest, service worker, encrypted IndexedDB cache | 🟡 live (2026-09-09) — manifest + SW registered (cache-first static); encrypted IndexedDB cache + offline queue remain |
 | 2 | Android APK: Capacitor, Keystore token store, SQLCipher, signed build | 🟡 scaffolded (`mobile/`) — needs Phase 0 + release keystore CI secret |
 | 3 | Desktop: Electron + safeStorage | ⬜ pending |
 | 4 | Hardening + staged rollout (10% → 50% → 100%) | ⬜ pending |
@@ -42,3 +42,5 @@ Rollout checklist: [#466](https://github.com/CipherTube/Cipher-tube/issues/466) 
 - ✅ Hash-chained audit trail — `src/governance/auditTrail.ts` (tamper-evident, blinded actors)
 - Framework: [docs/GOVERNANCE_COMPLIANCE.md](./docs/GOVERNANCE_COMPLIANCE.md) — all-original CipherTube design, no third-party governance dependencies
 - ✅ Gateway wiring — `governanceGuard` live on `/system/analytics` + `/v1/channel/verify` (default-allow; set `CT_GOVERNANCE_RULES=baseline` to enforce)
+
+- ✅ Asset registry — `src/governance/assetRegistry.ts` (machine-readable inventory, criticality tiers, crown-jewels summary)
