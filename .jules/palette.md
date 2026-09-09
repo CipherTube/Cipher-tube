@@ -33,3 +33,7 @@
 ## 2026-06-17 - [Context-Aware Keyboard Shortcuts]
 **Learning:** Global single-key shortcuts (e.g., 's' for "Save" or "Create") can severely degrade UX by interfering with text entry in form fields. Implementing a simple check for active elements like `INPUT` or `TEXTAREA` ensures shortcuts only trigger when the user is not actively typing.
 **Action:** Always wrap global keyboard listeners in a check for `document.activeElement.tagName` to prevent shortcut collision during data entry. Pair this with visual shortcuts hints (`<kbd>`) that are preserved even during asynchronous state changes.
+
+## 2026-08-21 - [Clear Input Button Layout and Initial State Synchronization]
+**Learning:** Adding an absolute-positioned clear button (`✕`) inside a text input container requires right padding (e.g., `padding: 8px 28px 8px 12px`) and `box-sizing: border-box` on the input element to prevent typed text from rendering beneath the icon. Additionally, visibility toggle handlers must execute both on input events and immediately on page load to handle pre-populated or browser-restored inputs.
+**Action:** Always add sufficient right padding to inputs with clear buttons and call the clear button state toggle logic on initialization.

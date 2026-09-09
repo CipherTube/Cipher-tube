@@ -176,6 +176,27 @@ export const PRE_RENDERED_STYLES = `
         outline: 2px solid var(--primary);
         opacity: 1;
     }
+    #clear-user-id-btn {
+        display: none;
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--text-color);
+        cursor: pointer;
+        padding: 4px;
+        opacity: 0.7;
+        font-size: 0.875rem;
+        line-height: 1;
+        z-index: 2;
+    }
+    #clear-user-id-btn:hover { opacity: 1; }
+    #clear-user-id-btn:focus-visible {
+        outline: 2px solid var(--primary);
+        border-radius: 4px;
+    }
     .theme-icon {
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: inline-block;
