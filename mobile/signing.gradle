@@ -1,0 +1,25 @@
+// CypherTube Android release signing — wired from environment, never committed.
+// CI decodes ANDROID_KEYSTORE_BASE64 to a file and exports the passwords.
+// Locally without these vars, `assembleDebug` works untouched.
+def ksFile = System.getenv('CIPHERTUBE_KEYSTORE_FILE')
+def ksPass = System.getenv('CIPHERTUBE_KEYSTORE_PASSWORD')
+def kAlias = System.getenv('CIPHERTUBE_KEY_ALIAS')
+def kPass  = System.getenv('CIPHERTUBE_KEY_PASSWORD')
+
+if (ksFile && file(ksFile).exists()) {
+    android {
+        signingConfigs {
+            release {
+                storeFile file(ksFile)
+                storePassword ksPass
+                keyAlias kAlias
+                keyPassword kPass
+            }
+        }
+        buildTypes {
+            release {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
