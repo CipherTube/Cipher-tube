@@ -1,5 +1,6 @@
 import express, { Request, Response, Application } from 'express';
 import { cipherTubeGateway } from './gateway/sessionMiddleware';
+import { governanceGuard, governanceAudit } from './governance/gatewayGuard';
 import { cache } from './cache/redisPool';
 
 export const app: Application = express();
@@ -13,7 +14,7 @@ app.use(express.json({ limit: '10kb' }));
  * Exposes core state diagnostics and cache performance metrics safely.
  * Sentinel: Guarded by cipherTubeGateway middleware to prevent unauthorized metrics exposure.
  */
-app.get('/system/analytics', cipherTubeGateway, async (req: Request, res: Response) => {
+app.get('/system/analytics', cipherTubeGateway, governanceGuard, async (req: Request, res: Response) => {
     try {
         const cacheOpen = cache.rawClient.isOpen;
         // In a live environment, these are aggregated from internal memory markers
@@ -24,7 +25,9 @@ app.get('/system/analytics', cipherTubeGateway, async (req: Request, res: Respon
             metrics: {
                 engineUptime: process.uptime(),
                 memoryUsage: process.memoryUsage().heapUsed,
-                cachePoolActive: cacheOpen
+                cachePoolActive: cacheOpen,
+                governanceChainLength: governanceAudit.length,
+                governanceChainIntact: governanceAudit.verify()
             }
         };
         return res.status(200).json(diagnosticSnapshot);
@@ -37,7 +40,7 @@ app.get('/system/analytics', cipherTubeGateway, async (req: Request, res: Respon
  * 🔒 Cryptographically Guarded Communication Pipeline
  * Mounts our zero-knowledge structural evaluation layer before granting downstream access.
  */
-app.post('/v1/channel/verify', cipherTubeGateway, (req: Request, res: Response) => {
+app.post('/v1/channel/verify', cipherTubeGateway, governanceGuard, (req: Request, res: Response) => {
     // If the request makes it here, it has passed all ZK validation boundaries
     return res.status(200).json({
         status: "verified",
