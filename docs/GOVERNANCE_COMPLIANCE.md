@@ -56,3 +56,21 @@ This framework turns CipherTube's written guardrails into machine-enforced contr
 - **Priority 3 rotation** → the `challenge` action triggers handshake validation.
 - **Priority 4 metrics** → policy decision counters (`policy.allow` / `policy.challenge` / `policy.block`) plus the audit persistence sink.
 - **Platform rollout (#466)** → mobile/web clients reuse the same rule schema for client-side guardrails.
+
+## 7. Asset Registry (`src/governance/assetRegistry.ts`)
+
+Machine-readable inventory of every gateway component: id, category, criticality tier, data classes processed, and source module. This is the record-keeping backbone for impact reviews and erasure tracing — each entry declares what data a component touches, so a request against one data class resolves to concrete code paths. `inventorySummary()` exposes counts by tier plus the high-criticality ("crown jewels") set for compliance reporting. Changes go through PR like code.
+
+## 8. Standards Mapping (indicative)
+
+References to public frameworks are orientation points only; all mechanisms below are original CipherTube implementations.
+
+| Framework area | Function | CipherTube mechanism |
+|---|---|---|
+| Risk identification & component inventory (e.g. NIST AI RMF Map/Measure/Manage) | Know what exists, measure continuously | Asset Registry §7; telemetry on `/system/analytics`; audit chain metrics |
+| Logging & record-keeping for high-risk operations (e.g. EU AI Act technical logging) | Tamper-evident records of system behavior | Hash-chained audit trail §3 |
+| Human oversight & override capability | Enforceable, explainable intervention points | Policy engine §2 — every block/challenge carries rule id + reason |
+| Data protection principles (GDPR) | Minimization, storage limitation, erasure | Blinded keys, TTL'd sessions, blinded-key deletion (§1) |
+| Access control & monitoring (SOC 2 CC6/CC7) | Least privilege, continuous monitoring | Scope rules + `cipherTubeGateway`; probes and analytics endpoints |
+
+*Indicative engineering guidance — not legal advice or a certification claim.*
