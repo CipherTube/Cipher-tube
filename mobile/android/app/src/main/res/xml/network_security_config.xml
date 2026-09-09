@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    <!-- Add <pin-set> with SHA-256 pins of the production gateway cert before
+         the first public release. See PLATFORM_SHIP_PLAN.md section 7 and 9.2. -->
+</network-security-config>

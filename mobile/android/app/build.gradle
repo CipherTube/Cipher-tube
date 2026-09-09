@@ -1,0 +1,29 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'org.ciphertube.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "org.ciphertube.app"
+        minSdkVersion 30
+        targetSdkVersion 34
+        versionCode 10600        // v1.6.0-alpha.1
+        versionName "1.6.0-alpha.1"
+    }
+
+    signingConfigs {
+        release {
+            // Populated from CI secrets only: CT_RELEASE_KEYSTORE_B64,
+            // CT_KEYSTORE_PASSWORD, CT_KEY_ALIAS, CT_KEY_PASSWORD
+            // Never commit keystores or passwords to this repo.
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.release
+        }
+    }
+}

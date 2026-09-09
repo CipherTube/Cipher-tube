@@ -1,0 +1,28 @@
+{
+  "name": "ciphertube-desktop",
+  "version": "1.6.0-alpha.1",
+  "description": "CypherTube desktop client (Electron)",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.ciphertube.desktop",
+    "productName": "CypherTube",
+    "files": ["main.js", "preload.js"],
+    "directories": { "buildResources": "build" },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "entitlements": "build/entitlements.mac.plist",
+      "hardenedRuntime": true
+    },
+    "linux": { "target": ["AppImage"] },
+    "win": { "target": ["nsis"] }
+  }
+}
