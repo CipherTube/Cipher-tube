@@ -509,6 +509,12 @@ app.use("/docs", express.static(path.join(__dirname, "../docs")));
 
 // Phase 0: serve the extracted static UI bundle (PLATFORM_SHIP_PLAN.md)
 app.use("/ui", express.static(path.join(__dirname, "../ui/public")));
+
+// Phase 1 (PWA): serve the service worker from the site root so its scope is "/".
+app.get("/sw.js", (req: Request, res: Response) => {
+    res.setHeader("Content-Type", "application/javascript");
+    res.sendFile(path.join(__dirname, "../ui/public/sw.js"));
+});
 export const redisClient: RedisClientType = createClient({
   url: process.env.REDIS_URL || "redis://localhost:6379",
 });
@@ -530,6 +536,7 @@ app.get("/", (req: Request, res: Response) => {
             <title>Sovereign Cypher-Tube</title>
             <script src="/ui/theme-boot.js"></script>
             <link rel="stylesheet" href="/ui/styles.css">
+            <link rel="manifest" href="/ui/manifest.webmanifest">
             <style nonce="${res.locals.nonce}">
                 ${CosmologyMap.getAuraStyles()}
             </style>
