@@ -10,7 +10,7 @@ Electron wrapper around the CypherTube gateway — the desktop track of the mult
 - [x] electron-builder config reusing the existing `build/entitlements.mac.plist`
 - [ ] Notarization (macOS) + code signing certs (Windows/Linux need signing keys)
 - [ ] First packaged builds per platform
-- [ ] Cert pinning for the production gateway URL
+- [x] Cert pinning for the production gateway URL (`CIPHERTUBE_CERT_PIN` — SHA-256, fail-closed)
 
 ## Run (dev against a local gateway)
 
