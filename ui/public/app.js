@@ -255,19 +255,54 @@
                     }
                 });
 
-                // Intercept session creation to track Token for extension
+                // Intercept session creation to track Token for extension.
+                // Phase 1 (offline): network failures on session operations are queued in the
+                // encrypted IndexedDB cache and replayed when connectivity returns.
                 const originalFetch = window.fetch;
                 window.fetch = async (...args) => {
-                    const response = await originalFetch(...args);
-                    if (typeof args[0] === 'string' && args[0].includes('/mcp') && args[1]?.method === 'POST') {
-                        const data = await response.clone().json();
-                        if (data.sessionToken) {
-                            window.currentSessionToken = data.sessionToken;
-                            updateCurlCommand();
+                    try {
+                        const response = await originalFetch(...args);
+                        if (typeof args[0] === 'string' && args[0].includes('/mcp') && args[1]?.method === 'POST') {
+                            const data = await response.clone().json();
+                            if (data.sessionToken) {
+                                window.currentSessionToken = data.sessionToken;
+                                updateCurlCommand();
+                            }
                         }
+                        return response;
+                    } catch (err) {
+                        const url = typeof args[0] === 'string' ? args[0] : args[0]?.url;
+                        const method = args[1]?.method || 'POST';
+                        if (window.CypherOffline && navigator.onLine === false &&
+                            (url === '/mcp' || url === '/session/extend')) {
+                            window.CypherOffline.queueOperation({
+                                url: url,
+                                method: method,
+                                userId: userIdInput.value.trim() || 'demo-user',
+                                sessionToken: window.currentSessionToken || null,
+                                queuedAt: Date.now(),
+                            }).catch(() => {});
+                        }
+                        throw err;
                     }
-                    return response;
                 };
+
+                // Replay queued operations when connectivity returns (or on load).
+                function replayQueuedOperations() {
+                    if (!window.CypherOffline) return;
+                    window.CypherOffline.drainQueue(async (op) => {
+                        const options = { method: op.method, headers: { 'x-user-id': op.userId } };
+                        if (op.sessionToken) options.headers['x-session-token'] = op.sessionToken;
+                        if (op.method === 'POST') {
+                            options.headers['Content-Type'] = 'application/json';
+                            options.body = JSON.stringify({});
+                        }
+                        const response = await originalFetch(op.url, options);
+                        if (!response.ok) throw new Error('replay failed: ' + response.status);
+                    }).catch(() => {});
+                }
+                window.addEventListener('online', replayQueuedOperations);
+                window.addEventListener('load', replayQueuedOperations);
 
                 // Keyboard Shortcut Toggle (WCAG 2.1.4 compliant)
                 const toggleShortcutsBtn = document.getElementById('toggle-shortcuts-btn');
