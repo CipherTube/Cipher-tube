@@ -22,7 +22,7 @@ This framework turns CipherTube's written guardrails into machine-enforced contr
 - Context carries `route`, `scopes`, `sessionAgeSeconds`, `rotationCount` — sourced from the v1 session payload (Priority 1).
 - Actions: `allow` (proceed), `challenge` (force re-validation / handshake — hooks into Priority 3 rotation), `block` (reject with reason).
 - Rule factories: `requireScope()`, `maxSessionAge()`, `requireRotation()`. `BASELINE_RULES` ships **opt-in** — do not enforce scope rules until scope issuance is live on all clients.
-- Integration point: `cipherTubeGateway` calls `evaluatePolicies()` before granting downstream access, and every non-allow decision emits an audit event.
+- Integration (LIVE 2026-09-09): `governanceGuard` is mounted after `cipherTubeGateway` on `/system/analytics` and `/v1/channel/verify`. Default-allow — set `CT_GOVERNANCE_RULES=baseline` to enforce. Every non-allow decision emits an audit event; `/system/analytics` reports `governanceChainLength` / `governanceChainIntact`.
 
 ## 3. Audit Trail (`src/governance/auditTrail.ts`)
 
