@@ -17,11 +17,16 @@ Covers the APK (Android), Web (PWA), and Desktop (Electron) targets per [PLATFOR
 2. Sync the bundle: `pnpm --filter ui build && npx cap sync android`
 3. Debug build: `cd mobile/android && ./gradlew assembleDebug`
 4. Release build: `./gradlew assembleRelease`
-   - Signing reads from env: `CT_RELEASE_KEYSTORE_B64`, `CT_KEYSTORE_PASSWORD`, `CT_KEY_ALIAS`, `CT_KEY_PASSWORD` (CI secrets only - never commit)
+   - Signing reads from env via `mobile/signing.gradle`: `CIPHERTUBE_KEYSTORE_FILE`, `CIPHERTUBE_KEYSTORE_PASSWORD`, `CIPHERTUBE_KEY_ALIAS`, `CIPHERTUBE_KEY_PASSWORD`. CI decodes the `ANDROID_KEYSTORE_BASE64` secret to the file (CI secrets only - never commit)
 5. Output: `android/app/build/outputs/apk/release/app-release.apk` (v2+v3 signed)
 
-## Desktop (Electron)
-`electron-builder` with the existing `desktop/build/entitlements.mac.plist`; `safeStorage` for token/key storage.
+## Desktop (Electron) — Phase 3 implementation record (complete pending signing certs)
+
+- **Main process** (`desktop/main.js`): contextIsolation on, `nodeIntegration` off, `sandbox` on; dev-only self-signed acceptance gated behind `CIPHERTUBE_DEV=1`/`CIPHERTUBE_ALLOW_SELF_SIGNED=1`
+- **Certificate pinning**: before any window loads the gateway, the main process TLS-connects and compares the leaf cert's SHA-256 against `CIPHERTUBE_CERT_PIN` — **fail-closed** (mismatch loads an error page, never the gateway). Opt-in; extract the pin with the one-liner in docs/SIGNING_GUIDE.md §4
+- **Token store**: `safeStorage` (OS keychain) under `userData/tokens/`; renderer sees only `window.cypherTokenStore.{put,get,delete}` via the preload bridge — desktop equivalent of docs/KEYSTORE_TOKEN_STORE.md
+- **Packaging**: `electron-builder` (mac/win/linux) reusing `desktop/build/entitlements.mac.plist`; hardened runtime on; config in `desktop/package.json`
+- **Builds**: `ci-workflows/ci-build.yml` (verification, unsigned) and `ci-workflows/release.yml` (tag-triggered, signed+notarized when secrets present). Secrets & activation steps: docs/SIGNING_GUIDE.md and ci-workflows/README.md
 
 ## Versioning & tags
 - semver x.y.z + integer `versionCode` (1.6.0 -> 10600)
