@@ -19,7 +19,7 @@ Consolidated project roadmap. Last updated: 2026-09-09. Current tag: [v1.6.0-alp
 | 1 | Web/PWA: manifest, service worker, encrypted IndexedDB cache | ✅ complete (2026-09-09) — manifest + SW + icons + encrypted offline cache with operation queue |
 | 2 | Android APK: Capacitor, Keystore token store, SQLCipher, signed build | 🟡 scaffolded (`mobile/`) — needs Phase 0 + release keystore CI secret |
 | 3 | Desktop: Electron + safeStorage | 🟡 complete pending signing certs — hardened main, preload bridge, safeStorage store, cert pinning (fail-closed), CI builds configured |
-| 4 | Hardening + staged rollout (10% → 50% → 100%) | ⬜ pending |
+| 4 | Hardening: security review, staged rollout 10%→50%→100% | 📋 planned (2026-09-13) — tracks A–D in docs/PHASE4_PLAN.md; update-manifest + metrics counters can start now |
 
 Rollout checklist: [#466](https://github.com/CipherTube/Cipher-tube/issues/466) · Build pipeline: [BUILD.md](./BUILD.md)
 
