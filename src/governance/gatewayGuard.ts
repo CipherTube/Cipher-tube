@@ -20,6 +20,7 @@ import {
     PolicyRule,
 } from './policyEngine';
 import { AuditTrail, AuditEvent } from './auditTrail';
+import { bump, POLICY_COUNTERS } from './metricsCounters';
 
 /** Shared governance audit trail (hash-chained, tamper-evident). */
 export const governanceAudit = new AuditTrail();
@@ -59,11 +60,16 @@ export function buildPolicyContext(req: Request): PolicyContext {
 export function governanceGuard(req: Request, res: Response, next: NextFunction) {
     const decision = evaluatePolicies(buildPolicyContext(req), activeRules());
 
+    // Phase 4 / Track C: every policy decision is counted (fire-and-forget,
+    // never blocks the request path). Feeds /system/analytics + alerting.
+    bump(POLICY_COUNTERS[decision.action]);
+
     if (decision.action === 'allow') {
         return next();
     }
 
     // Rule of engagement: every block/challenge decision is auditable.
+    bump('audit.append');
     governanceAudit.append({
         type: `policy.${decision.action}`,
         actor: 'gateway', // system actor; session-bound actors use blinded hashes

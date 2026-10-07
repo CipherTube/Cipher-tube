@@ -1,13 +1,29 @@
-import express, { Request, Response, Application } from 'express';
+import express, { Request, Response, Application, NextFunction } from 'express';
 import { cipherTubeGateway } from './gateway/sessionMiddleware';
 import { governanceGuard, governanceAudit } from './governance/gatewayGuard';
 import { cache } from './cache/redisPool';
+import { metricsSnapshot, observeLatency } from './governance/metricsCounters';
+import { currentManifest, isAudienceEnabled } from './governance/updateManifest';
 
 export const app: Application = express();
 const PORT = process.env.GATEWAY_PORT || 8080;
 
 // Standard body parsers restricted to essential sizes to prevent buffer exhaustion attacks
 app.use(express.json({ limit: '10kb' }));
+
+/**
+ * ⏱️ Per-Route Latency Middleware (Phase 4 / Track C)
+ * Records a latency sample for every request on response completion.
+ * In-process sliding window (5 min, capped) -> p50/p99 in /system/analytics.
+ * Zero allocation on the hot path beyond one sample per request.
+ */
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+    res.on('finish', () => {
+        observeLatency(req.path, Date.now() - startedAt);
+    });
+    next();
+});
 
 /**
  * 📊 Live Gateway Telemetry Endpoint
@@ -28,7 +44,11 @@ app.get('/system/analytics', cipherTubeGateway, governanceGuard, async (req: Req
                 cachePoolActive: cacheOpen,
                 governanceChainLength: governanceAudit.length,
                 governanceChainIntact: governanceAudit.verify()
-            }
+            },
+            // Phase 4 / Track C: windowed policy/audit counters +
+            // per-route latency percentiles (degraded=true when the
+            // Redis pool is down — snapshot falls back to local tallies).
+            phase4: await metricsSnapshot()
         };
         return res.status(200).json(diagnosticSnapshot);
     } catch (err) {
@@ -47,6 +67,40 @@ app.post('/v1/channel/verify', cipherTubeGateway, governanceGuard, (req: Request
         channelState: "secure",
         tokenSignature: (req as any).cipherState.originEpoch
     });
+});
+
+/**
+ * 📦 Update Manifest (Phase 4 / Track B — B1)
+ * Prerequisite for public APK/desktop distribution (BUILD.md release gate).
+ * Serves the current version + staged-rollout audience flags, with a
+ * runtime kill switch (ct:update:hold in Redis — freeze distribution
+ * instantly, no redeploy).
+ *
+ * Guarded by governanceGuard (policy-as-code controls distribution) but
+ * NOT by cipherTubeGateway: clients poll for updates before a session is
+ * established, so the ZK challenge must not gate this endpoint. Audience
+ * bucketing is deterministic and stateless — no per-device records.
+ * Optional ?clientId= lets the server compute eligibility; the id is used
+ * in-memory for bucketing only and is never stored.
+ */
+app.get('/update-manifest', governanceGuard, async (req: Request, res: Response) => {
+    try {
+        const manifest = await currentManifest();
+        const clientId = typeof req.query.clientId === 'string' ? req.query.clientId : undefined;
+        const clientVersionCode =
+            typeof req.query.versionCode === 'string' ? Number(req.query.versionCode) : undefined;
+        const eligibility = clientId
+            ? isAudienceEnabled(
+                  clientId,
+                  manifest.status === 'hold' ? 0 : manifest.audiencePercent,
+                  clientVersionCode,
+                  manifest.minSupportedVersionCode
+              )
+            : undefined;
+        return res.status(200).json({ ...manifest, eligible: eligibility });
+    } catch (err) {
+        return res.status(500).json({ error: 'Failed to produce update manifest.' });
+    }
 });
 
 /**
