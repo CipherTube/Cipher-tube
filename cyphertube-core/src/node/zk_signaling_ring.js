@@ -77,19 +77,41 @@ export class ZkSignalingRing {
   }
 
   async handleIncomingSignal(packet) {
+    if (!packet || typeof packet !== 'object' || Array.isArray(packet)) return;
     const { senderDid, windowId, frame, signature } = packet;
+    if (
+      typeof senderDid !== "string" ||
+      typeof windowId !== "string" ||
+      typeof frame !== "string" ||
+      typeof signature !== "string"
+    ) return;
+
     const ringContext = this.activeRings.get(windowId);
     if (!ringContext) return;
 
-    const isValid = crypto.verify(
-      null,
-      Buffer.from(frame),
-      ringContext.opPublicKey,
-      Buffer.from(signature, "hex"),
-    );
+    let isValid;
+    try {
+      isValid = crypto.verify(
+        null,
+        Buffer.from(frame),
+        ringContext.opPublicKey,
+        Buffer.from(signature, "hex"),
+      );
+    } catch {
+      return;
+    }
     if (!isValid) return;
 
-    const decodedFrame = JSON.parse(frame);
+    let decodedFrame;
+    try {
+      decodedFrame = JSON.parse(frame);
+    } catch {
+      return;
+    }
+
+    if (!decodedFrame || typeof decodedFrame !== 'object' || Array.isArray(decodedFrame)) return;
+    if (typeof decodedFrame.t !== 'number' || !Number.isSafeInteger(decodedFrame.t)) return;
+
     if (
       Math.abs(Math.floor(Date.now() / 1000) - decodedFrame.t) >
       this.WINDOW_DURATION_SEC
