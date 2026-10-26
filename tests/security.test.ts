@@ -54,6 +54,17 @@ describe("Security Validation", () => {
       expect(response.status).toBe(400);
       expect(response.body.error).toContain("Invalid x-user-id");
     });
+
+    it("should reject prototype-polluting strings as x-user-id", async () => {
+      const forbiddenValues = ["__proto__", "constructor", "prototype"];
+
+      for (const value of forbiddenValues) {
+        const response = await request(app).post("/mcp").set("x-user-id", value);
+
+        expect(response.status).toBe(400);
+        expect(response.body.error).toBe("Invalid x-user-id: forbidden value");
+      }
+    });
   });
 
   describe("Sanitized Error Logging", () => {
