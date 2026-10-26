@@ -1,3 +1,4 @@
+import hmac
 import os
 from fastapi import Security, HTTPException, status
 from fastapi.security.api_key import APIKeyHeader
@@ -15,8 +16,8 @@ def verify_api_key(
     cypher_token: str = Security(cypher_token_header)
 ) -> str:
     """
-    Verifies that the request provides a valid API Key or Cypher Token.
-    Keeps file sharing strictly authorized.
+    Verifies that the request provides a valid API Key or Cypher Token in constant time.
+    Keeps file sharing strictly authorized against side-channel timing attacks.
     """
     provided_key = api_key or cypher_token
     if not provided_key:
@@ -25,7 +26,7 @@ def verify_api_key(
             detail="Missing API Key or X-Cypher-Token header."
         )
 
-    if provided_key != CYPHER_API_KEY:
+    if not hmac.compare_digest(provided_key, CYPHER_API_KEY):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid authorization token."

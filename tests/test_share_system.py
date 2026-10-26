@@ -158,6 +158,23 @@ class TestShareSystem(unittest.TestCase):
         response = self.client.post("/api/v1/share/create", json=payload, headers=headers)
         self.assertEqual(response.status_code, 403)  # Invalid key
 
+    def test_api_create_share_link_timing_safety(self):
+        payload = {
+            "video_id": "vid_api_timing",
+            "file_path": self.temp_file.name
+        }
+        # Verify rejection of keys with varying lengths and invalid characters
+        invalid_keys = [
+            "c",
+            "cypher_",
+            "cypher_secure_secret_token_2025",
+            CYPHER_API_KEY + "_extra",
+            "X" * len(CYPHER_API_KEY)
+        ]
+        for key in invalid_keys:
+            response = self.client.post("/api/v1/share/create", json=payload, headers={"X-API-Key": key})
+            self.assertEqual(response.status_code, 403)
+
     def test_api_create_share_link_authenticated(self):
         payload = {
             "video_id": "vid_api_2",
