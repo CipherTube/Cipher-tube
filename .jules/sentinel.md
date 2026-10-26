@@ -107,3 +107,8 @@
 **Vulnerability:** Service-wide Denial of Service (DoS) and crash risk via unhandled TypeError exceptions in secure_unwrap.
 **Learning:** In Python, calling functions like `bytes.fromhex` on non-string inputs (or subscripting non-dictionary objects) raises a `TypeError`. If the cryptographic wrap/unwrap pipeline only catches standard decoding or parsing errors (like `KeyError` or `ValueError`), type-confusion payloads from untrusted sources will crash the execution context rather than failing gracefully.
 **Prevention:** Always enforce strict type checks (using `isinstance`) on security-critical inputs and explicitly catch `TypeError` alongside other data parsing exceptions in cryptographic utility entrypoints, mapping them to standard fallback errors (like `ValueError`) to ensure fail-secure behavior.
+
+## 2026-08-09 - Sanitized Redis Error Logging
+**Vulnerability:** Raw error objects in `src/cache/redisPool.ts` logged internal state and connection parameters, risking URI/password exposure in logs.
+**Learning:** Default error serializations from third-party drivers (like ioredis/redis) can include full connection strings or auth options in stack metadata.
+**Prevention:** Always extract explicit `err.message` or run error objects through a logger sanitizer before printing to `console.error` or standard logging streams.
