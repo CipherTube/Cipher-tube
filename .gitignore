@@ -24,6 +24,9 @@ venv/
 htmlcov/
 .coverage
 .coverage.*
+*.db
+*.sqlite
+*.sqlite3
 
 # Rust
 target/

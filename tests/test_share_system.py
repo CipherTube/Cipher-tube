@@ -225,3 +225,27 @@ class TestShareSystem(unittest.TestCase):
         # Public access should now be forbidden
         access_res = self.client.get(f"/api/v1/share/access/{token}")
         self.assertEqual(access_res.status_code, 403)
+
+    def test_api_create_share_link_timing_safety(self):
+        payload = {
+            "video_id": "vid_api_5",
+            "file_path": self.temp_file.name,
+            "expire_hours": 1
+        }
+        # Test various invalid key formats and lengths against constant-time check
+        invalid_keys = [
+            "c",
+            "cypher_",
+            "cypher_secure_secret_token_202",
+            "cypher_secure_secret_token_2027",
+            "cypher_secure_secret_token_2026_extra",
+            "a" * 100,
+            "",
+        ]
+        for key in invalid_keys:
+            if not key:
+                res = self.client.post("/api/v1/share/create", json=payload, headers={"X-API-Key": key})
+                self.assertEqual(res.status_code, 401)
+            else:
+                res = self.client.post("/api/v1/share/create", json=payload, headers={"X-API-Key": key})
+                self.assertEqual(res.status_code, 403)
