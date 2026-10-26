@@ -107,3 +107,8 @@
 **Vulnerability:** Service-wide Denial of Service (DoS) and crash risk via unhandled TypeError exceptions in secure_unwrap.
 **Learning:** In Python, calling functions like `bytes.fromhex` on non-string inputs (or subscripting non-dictionary objects) raises a `TypeError`. If the cryptographic wrap/unwrap pipeline only catches standard decoding or parsing errors (like `KeyError` or `ValueError`), type-confusion payloads from untrusted sources will crash the execution context rather than failing gracefully.
 **Prevention:** Always enforce strict type checks (using `isinstance`) on security-critical inputs and explicitly catch `TypeError` alongside other data parsing exceptions in cryptographic utility entrypoints, mapping them to standard fallback errors (like `ValueError`) to ensure fail-secure behavior.
+
+## 2026-08-07 - Type-Confusion in Decrypted Vault Indexes
+**Vulnerability:** Service-wide Denial of Service (DoS) and crash risk via unhandled TypeError exceptions in selectiveUnpack.
+**Learning:** Even when decrypted data is structurally validated before decryption (using AEAD signatures), parsing the decrypted JSON payload can return arbitrary data types (e.g. an object instead of an array). Calling array methods like `.find()` on non-array objects causes a runtime TypeError that can crash request/worker contexts if not handled.
+**Prevention:** Always check if parsed JSON structures match the expected collection type (e.g., using `Array.isArray()`) and validate all target object fields for expected types and safe ranges before use.

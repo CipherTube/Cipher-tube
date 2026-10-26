@@ -201,7 +201,9 @@ export class VaultIndexer {
             const decryptedIndexBuf = Buffer.concat([decipher.update(encryptedIndex), decipher.final()]);
             decryptedIndexStr = decryptedIndexBuf.toString('utf8');
         } catch (err: any) {
-            throw new Error(`Integrity verification failed for index: ${err.message}`);
+            const error = new Error(`Integrity verification failed for index: ${err.message}`);
+            (error as any).cause = err;
+            throw error;
         }
 
         let manifest: FileIndexEntry[];
@@ -211,10 +213,29 @@ export class VaultIndexer {
             throw new Error('Invalid vault index structure: JSON parse error.');
         }
 
-        // 6. Search for target file path in manifest
-        const entry = manifest.find((item) => item.filePath === filePath);
+        // Sentinel: Ensure the parsed manifest is actually an array to prevent type confusion DoS/crashes
+        if (!Array.isArray(manifest)) {
+            throw new Error('Invalid vault index structure: Manifest must be an array.');
+        }
+
+        // 6. Search for target file path in manifest safely
+        const entry = manifest.find((item) => item && typeof item === 'object' && item.filePath === filePath);
         if (!entry) {
             throw new Error(`File not found in vault manifest: ${filePath}`);
+        }
+
+        // Sentinel: Validate structure of the found manifest entry to prevent malformed value exploit or out-of-bounds slicing
+        if (
+            typeof entry.byteOffset !== 'number' ||
+            typeof entry.fileSize !== 'number' ||
+            !Number.isSafeInteger(entry.byteOffset) ||
+            !Number.isSafeInteger(entry.fileSize) ||
+            entry.byteOffset < 0 ||
+            entry.fileSize < 0 ||
+            typeof entry.iv !== 'string' ||
+            typeof entry.tag !== 'string'
+        ) {
+            throw new Error('Invalid file entry structure in manifest.');
         }
 
         // 7. Selective extraction and decryption
@@ -234,7 +255,9 @@ export class VaultIndexer {
             fileDecipher.setAuthTag(fileTagBuf);
             return Buffer.concat([fileDecipher.update(encryptedFilePayload), fileDecipher.final()]);
         } catch (err: any) {
-            throw new Error(`Selective decryption failed for file ${filePath}: ${err.message}`);
+            const error = new Error(`Selective decryption failed for file ${filePath}: ${err.message}`);
+            (error as any).cause = err;
+            throw error;
         }
     }
 }

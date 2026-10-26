@@ -101,4 +101,77 @@ describe('Encrypted Vault Indexer (vault_core)', () => {
             VaultIndexer.selectiveUnpack('not-a-buffer' as any, 'config/session_keys.dat', masterKey);
         }).toThrow('Input must be a Buffer.');
     });
+
+    it('should reject malformed manifest JSON when decrypted (type confusion prevention)', () => {
+        const invalidManifestStr = JSON.stringify({ notAnArray: true });
+        const manifestBuf = Buffer.from(invalidManifestStr, 'utf8');
+
+        const indexIv = crypto.randomBytes(12);
+        const indexCipher = crypto.createCipheriv('aes-256-gcm', masterKey, indexIv);
+        const encryptedIndex = Buffer.concat([indexCipher.update(manifestBuf), indexCipher.final()]);
+        const indexTag = indexCipher.getAuthTag();
+
+        const totalBufferLength = VaultIndexer.MAGIC.length + 12 + 16 + 4 + encryptedIndex.length;
+        const vaultBuffer = Buffer.allocUnsafe(totalBufferLength);
+        let writeOffset = 0;
+
+        vaultBuffer.set(VaultIndexer.MAGIC, writeOffset);
+        writeOffset += VaultIndexer.MAGIC.length;
+
+        vaultBuffer.set(indexIv, writeOffset);
+        writeOffset += 12;
+
+        vaultBuffer.set(indexTag, writeOffset);
+        writeOffset += 16;
+
+        vaultBuffer.writeUInt32BE(encryptedIndex.length, writeOffset);
+        writeOffset += 4;
+
+        vaultBuffer.set(encryptedIndex, writeOffset);
+
+        expect(() => {
+            VaultIndexer.selectiveUnpack(vaultBuffer, 'config/session_keys.dat', masterKey);
+        }).toThrow('Invalid vault index structure: Manifest must be an array.');
+    });
+
+    it('should reject manifest entry with malformed fields', () => {
+        const invalidManifest = [
+            {
+                filePath: 'config/session_keys.dat',
+                categoryTag: 'security',
+                byteOffset: 'invalid-string-offset', // Should be a number
+                fileSize: 10,
+                iv: '1234567890abcdef12345678',
+                tag: '1234567890abcdef1234567890abcdef'
+            }
+        ];
+        const manifestBuf = Buffer.from(JSON.stringify(invalidManifest), 'utf8');
+
+        const indexIv = crypto.randomBytes(12);
+        const indexCipher = crypto.createCipheriv('aes-256-gcm', masterKey, indexIv);
+        const encryptedIndex = Buffer.concat([indexCipher.update(manifestBuf), indexCipher.final()]);
+        const indexTag = indexCipher.getAuthTag();
+
+        const totalBufferLength = VaultIndexer.MAGIC.length + 12 + 16 + 4 + encryptedIndex.length + 10;
+        const vaultBuffer = Buffer.allocUnsafe(totalBufferLength);
+        let writeOffset = 0;
+
+        vaultBuffer.set(VaultIndexer.MAGIC, writeOffset);
+        writeOffset += VaultIndexer.MAGIC.length;
+
+        vaultBuffer.set(indexIv, writeOffset);
+        writeOffset += 12;
+
+        vaultBuffer.set(indexTag, writeOffset);
+        writeOffset += 16;
+
+        vaultBuffer.writeUInt32BE(encryptedIndex.length, writeOffset);
+        writeOffset += 4;
+
+        vaultBuffer.set(encryptedIndex, writeOffset);
+
+        expect(() => {
+            VaultIndexer.selectiveUnpack(vaultBuffer, 'config/session_keys.dat', masterKey);
+        }).toThrow('Invalid file entry structure in manifest.');
+    });
 });
