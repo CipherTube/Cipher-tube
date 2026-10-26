@@ -107,3 +107,8 @@
 **Vulnerability:** Service-wide Denial of Service (DoS) and crash risk via unhandled TypeError exceptions in secure_unwrap.
 **Learning:** In Python, calling functions like `bytes.fromhex` on non-string inputs (or subscripting non-dictionary objects) raises a `TypeError`. If the cryptographic wrap/unwrap pipeline only catches standard decoding or parsing errors (like `KeyError` or `ValueError`), type-confusion payloads from untrusted sources will crash the execution context rather than failing gracefully.
 **Prevention:** Always enforce strict type checks (using `isinstance`) on security-critical inputs and explicitly catch `TypeError` alongside other data parsing exceptions in cryptographic utility entrypoints, mapping them to standard fallback errors (like `ValueError`) to ensure fail-secure behavior.
+
+## 2026-07-06 - Input Sanitization and Type Safety in Asymmetric Manifest Revocation
+**Vulnerability:** Potential Denial of Service (DoS) and evaluation bypasses in client manifest revocation ticket ingestion due to missing type and length validation.
+**Learning:** Accepting deserialized payloads (like revocation tickets) without strictly validating types and string lengths before performing cryptographic operations (such as signature verification) can result in runtime crashes (e.g. from type mismatch), memory exhaustion, or unexpected logical bypasses.
+**Prevention:** Enforce strict type validation (including plain non-null/non-array object checks, string types, and safe integer assertions) and reasonable length limits on all client-controlled inputs before processing them in downstream cryptographic routines.
