@@ -107,3 +107,8 @@
 **Vulnerability:** Service-wide Denial of Service (DoS) and crash risk via unhandled TypeError exceptions in secure_unwrap.
 **Learning:** In Python, calling functions like `bytes.fromhex` on non-string inputs (or subscripting non-dictionary objects) raises a `TypeError`. If the cryptographic wrap/unwrap pipeline only catches standard decoding or parsing errors (like `KeyError` or `ValueError`), type-confusion payloads from untrusted sources will crash the execution context rather than failing gracefully.
 **Prevention:** Always enforce strict type checks (using `isinstance`) on security-critical inputs and explicitly catch `TypeError` alongside other data parsing exceptions in cryptographic utility entrypoints, mapping them to standard fallback errors (like `ValueError`) to ensure fail-secure behavior.
+
+## 2026-08-09 - Denial of Service via Uncaught Exceptions in Consensus Loops
+**Vulnerability:** Service-wide Denial of Service (DoS) and process crash risks via unhandled TypeError/ReferenceError exceptions in governance consensus state transitions.
+**Learning:** In decentralization and state machine architectures, unhandled exceptions inside consensus loops or transition handlers act as direct DoS vectors. Attackers can submit malformed, untyped, or missing transition properties (e.g. `null` or arrays) to halt or crash peer execution pipelines without needing valid cryptographic signatures.
+**Prevention:** Enforce strict fail-fast type and structural boundary checks on all external arguments (such as `transition`, `signatures`, and `proposal`) at the very entry point before executing signature verification, hash computation, or state transitions.
