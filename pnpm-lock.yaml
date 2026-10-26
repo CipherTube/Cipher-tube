@@ -32,6 +32,9 @@ importers:
       redis:
         specifier: ^5.12.1
         version: 5.12.1(@opentelemetry/api@1.9.1)
+      vitest:
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@20.19.43)
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -2171,8 +2174,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  adm-zip@0.5.17:
-    resolution: {integrity: sha512-+Ut8d9LLqwEvHHJl1+PIHqoyDxFgVN847JTVM3Izi3xHDWPE4UtzzXysMZQs64DMcrJfBeS/uoEP4AD3HQHnQQ==}
+  adm-zip@0.5.18:
+    resolution: {integrity: sha512-ufJnssQGbxzLNS1Ho9bCtX4rQKCCvoVuDLHoJyc3F9dOGDB4BkWs2Ci0kv53lqocAEQ/Cbi+I2XCsNYGqVYqng==}
     engines: {node: '>=12.0'}
 
   agent-base@6.0.2:
@@ -2520,8 +2523,8 @@ packages:
     engines: {node: '>=12.13.0'}
     hasBin: true
 
-  chromedriver@150.0.0:
-    resolution: {integrity: sha512-MhHObBXNUOxJFzHuwRC+BXRFJNJgbgIr+y7B/MB++QioxbHz2R3Zj4WyJJVGqkjZyoVAF4zc46egxJ1GSFG7+w==}
+  chromedriver@150.0.4:
+    resolution: {integrity: sha512-Yg2oXBONi1mqAMOG2ybwUneSvxIn04NF4qNAJ+yGO2H7WwX1WYLGQRHVHsbySEjIuqIyDmS1ZfAw6p0wtl43zQ==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -5153,7 +5156,7 @@ snapshots:
     dependencies:
       '@axe-core/webdriverjs': 4.12.1(selenium-webdriver@4.44.0)
       axe-core: 4.12.1
-      chromedriver: 150.0.0
+      chromedriver: 150.0.4
       colors: 1.4.0
       commander: 9.5.0
       dotenv: 17.4.2
@@ -7121,7 +7124,7 @@ snapshots:
 
   acorn@8.17.0: {}
 
-  adm-zip@0.5.17: {}
+  adm-zip@0.5.18: {}
 
   agent-base@6.0.2:
     dependencies:
@@ -7499,10 +7502,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  chromedriver@150.0.0:
+  chromedriver@150.0.4:
     dependencies:
       '@testim/chrome-version': 1.1.4
-      adm-zip: 0.5.17
+      adm-zip: 0.5.18
       axios: 1.18.1
       compare-versions: 6.1.1
       proxy-agent: 8.0.2
