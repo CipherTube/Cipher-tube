@@ -750,6 +750,10 @@ const ensureSessionOwner = async (
   let ownerId = sessionCache.get(blindedKey);
 
   try {
+    if (ownerId === SESSION_NOT_FOUND) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
     if (!ownerId) {
       ownerId = (await redisClient.get(redisKey)) as string;
       if (!ownerId) {
