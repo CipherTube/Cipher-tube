@@ -48,6 +48,10 @@ export class ClientManifestVerifier {
   }
 
   ingestRevocationTicket(ticket) {
+    if (!ticket || typeof ticket !== "object" || Array.isArray(ticket)) {
+      throw new Error("REVOCATION_VERIFY_ERR: Ticket must be a valid non-null object.");
+    }
+
     const {
       revocation_target,
       revocation_epoch,
@@ -55,6 +59,34 @@ export class ClientManifestVerifier {
       issuer_node_did,
       revocation_signature,
     } = ticket;
+
+    // Sentinel: Strict structural and length validations on fields to prevent DoS/memory bloating
+    if (
+      typeof revocation_target !== "string" ||
+      typeof reason_code !== "string" ||
+      typeof issuer_node_did !== "string" ||
+      typeof revocation_signature !== "string"
+    ) {
+      throw new Error("REVOCATION_VERIFY_ERR: Invalid field types.");
+    }
+
+    if (
+      revocation_target.length > 1024 ||
+      reason_code.length > 256 ||
+      issuer_node_did.length > 1024 ||
+      revocation_signature.length > 1024
+    ) {
+      throw new Error("REVOCATION_VERIFY_ERR: Field exceeds maximum length limit.");
+    }
+
+    // Prevent NaN bypasses or unsafe integer values on cryptographic constraints
+    if (
+      typeof revocation_epoch !== "number" ||
+      !Number.isSafeInteger(revocation_epoch)
+    ) {
+      throw new Error("REVOCATION_VERIFY_ERR: Invalid revocation_epoch.");
+    }
+
     const kNodePubKey = this.trustedNodes.get(issuer_node_did);
     if (!kNodePubKey)
       throw new Error("REVOCATION_VERIFY_ERR: Origin node unknown.");

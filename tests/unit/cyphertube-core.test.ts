@@ -324,6 +324,49 @@ describe("CypherTube Sovereign, Zero-Knowledge P2P Streaming Engine Core", () =>
 
       expect(() => verifier.verifyManifest(expiredManifest)).toThrow("revoked");
     });
+
+    it("should reject malformed or oversized revocation tickets in ingestRevocationTicket", () => {
+      // 1. null ticket
+      expect(() => verifier.ingestRevocationTicket(null as any)).toThrow(
+        "REVOCATION_VERIFY_ERR: Ticket must be a valid non-null object."
+      );
+
+      // 2. non-string / incorrect field types
+      const badTicketTypes = {
+        revocation_target: 123 as any,
+        revocation_epoch: Math.floor(Date.now() / 1000),
+        reason_code: "KEY_COMPROMISE",
+        issuer_node_did: "did:ctube:node-1",
+        revocation_signature: "",
+      };
+      expect(() => verifier.ingestRevocationTicket(badTicketTypes)).toThrow(
+        "REVOCATION_VERIFY_ERR: Invalid field types."
+      );
+
+      // 3. invalid epoch type or value
+      const badEpochTicket = {
+        revocation_target: "target",
+        revocation_epoch: "not-a-number" as any,
+        reason_code: "KEY_COMPROMISE",
+        issuer_node_did: "did:ctube:node-1",
+        revocation_signature: "",
+      };
+      expect(() => verifier.ingestRevocationTicket(badEpochTicket)).toThrow(
+        "REVOCATION_VERIFY_ERR: Invalid revocation_epoch."
+      );
+
+      // 4. oversized fields
+      const oversizedTicket = {
+        revocation_target: "a".repeat(1025),
+        revocation_epoch: Math.floor(Date.now() / 1000),
+        reason_code: "KEY_COMPROMISE",
+        issuer_node_did: "did:ctube:node-1",
+        revocation_signature: "",
+      };
+      expect(() => verifier.ingestRevocationTicket(oversizedTicket)).toThrow(
+        "REVOCATION_VERIFY_ERR: Field exceeds maximum length limit."
+      );
+    });
   });
 
   describe("Layer 3: End-to-End Encrypted Group CRDT Storage (PlaylistMetadataStore)", () => {
