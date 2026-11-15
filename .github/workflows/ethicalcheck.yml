@@ -1,55 +1,22 @@
-name: EthicalCheck-Workflow
+name: EthicalCheck (disabled)
+
+# The original workflow used apisec-inc/ethicalcheck-action, which has been
+# deleted from GitHub, so every run failed at startup with an unresolvable
+# action. Manual dispatch only until a replacement API scanner is chosen.
+# Existing scanners in this repo: APIsec, CodeQL, Sentinel, MobSF.
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-  schedule:
-    - cron: "38 12 * * 5"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  Trigger_EthicalCheck:
-    permissions:
-      security-events: write
-      actions: read
-      contents: read
+  placeholder:
+    name: Disabled pending replacement scanner
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: EthicalCheck Free & Automated API Security Testing Service
-        uses: apisec-inc/ethicalcheck-action@005fac321dd843682b1af6b72f30caaf9952c641
-        with:
-          # TODO: Replace with Cipher-tube's own OpenAPI/Swagger URL once available.
-          oas-url: "http://netbanking.apisec.ai:8080/v2/api-docs"
-
-          # Email to receive penetration test reports
-          email: "jesszales.806@gmail.com"
-
-          # SARIF output file
-          sarif-result-file: "ethicalcheck-results.sarif"
-
-      - name: Upload SARIF file to repository
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: ./ethicalcheck-results.sarif
-
-      - name: Sentinel Ingest SARIF
+      - name: No-op
         run: |
-          mkdir -p sentinel/reports
-          python3 sentinel/ingest/ethicalchecksarifparser.py ethicalcheck-results.sarif > sentinel/reports/latest.json
-        if: always()
-
-      - name: Upload Sentinel Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: sentinel-report
-          path: sentinel/reports/latest.json
-        if: always()
+          echo "EthicalCheck action no longer exists on GitHub."
+          echo "Replace with a supported API security scanner when one is selected."

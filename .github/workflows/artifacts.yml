@@ -1,0 +1,40 @@
+name: Build and Store Artifacts
+
+# The original version of this workflow was concatenated into main.yml, which
+# made main.yml invalid YAML. It now lives here as its own file.
+# Note: actions/upload-artifact cannot be used while this repository allows
+# local actions only, so artifacts are packed and checksummed on the runner
+# and their contents and digest are printed to the log.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
+
+      - name: Build artifacts
+        working-directory: repo
+        run: |
+          mkdir -p output
+          echo "hello" > output/hello.txt
+          echo "commit ${GITHUB_SHA}" >> output/hello.txt
+
+      - name: Pack and checksum
+        working-directory: repo
+        run: |
+          tar -czf cipher-artifacts.tar.gz -C output .
+          sha256sum cipher-artifacts.tar.gz | tee cipher-artifacts.sha256
+          echo "--- contents ---"
+          tar -tzf cipher-artifacts.tar.gz

@@ -1,0 +1,61 @@
+name: CipherTube CI
+
+# Shell-only on purpose: this repository allows local actions only, so any
+# `uses:` step fails at startup. Everything here runs through the shell.
+
+on:
+  push:
+    branches: [ main, master, development ]
+  pull_request:
+    branches: [ main, master, development ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
+          cd repo && echo "commit: $(git rev-parse --short HEAD)"
+
+      - name: Show toolchain
+        run: |
+          python3 --version
+          node --version
+          npm --version
+
+      - name: Install Python dependencies
+        working-directory: repo
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pytest requests fastapi uvicorn pydantic
+
+      - name: Run C2PA verification tests
+        working-directory: repo
+        env:
+          CIPHER_TUBE_ENV: test
+        run: python3 -m pytest tests/test_c2pa_verification.py -v
+
+      - name: Run audit and webhook tests
+        working-directory: repo
+        env:
+          CIPHER_TUBE_ENV: test
+        run: python3 -m pytest tests/test_audit_and_webhook.py -v
+
+      - name: Validate Fern workspace definition
+        working-directory: repo/fern
+        continue-on-error: true
+        run: |
+          npm install -g fern-api
+          fern check
+
+      - name: Build local SDKs
+        working-directory: repo/fern
+        continue-on-error: true
+        run: fern generate --group local --non-interactive

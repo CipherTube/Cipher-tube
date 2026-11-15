@@ -1,1 +1,53 @@
-name: Code Coverage\n\non: [push, pull_request]\n\njobs:\n  coverage:\n    runs-on: ubuntu-latest\n    steps:\n      - name: Checkout code\n        uses: actions/checkout@v2\n      - name: Set up Node.js\n        uses: actions/setup-node@v2\n        with:\n          node-version: '14'\n      - name: Install dependencies\n        run: npm install\n      - name: Run tests with coverage\n        run: npm test -- --coverage\n      - name: Upload coverage to Codecov\n        uses: codecov/codecov-action@v2\n        with:\n          file: ./coverage/lcov.info\n          token: ${{ secrets.CODECOV_TOKEN }}\n
+name: Code Coverage
+
+# Previous file was a single line of literal \n escapes, so it never parsed.
+# Shell-only for the same policy reason as the rest of the workflows.
+
+on:
+  push:
+    branches: [ main, master, development ]
+  pull_request:
+    branches: [ main, master, development ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Run tests and report coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
+
+      - name: Install dependencies
+        working-directory: repo
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install pytest pytest-cov requests
+
+      - name: Run tests with coverage
+        working-directory: repo
+        env:
+          CIPHER_TUBE_ENV: test
+        run: |
+          python3 -m pytest tests/ -v --cov=simulators --cov-report=term-missing --cov-report=xml
+
+      - name: Report coverage total
+        working-directory: repo
+        run: |
+          if [ -f coverage.xml ]; then
+            grep -o 'line-rate="[^"]*"' coverage.xml | head -1
+          else
+            echo "no coverage.xml produced"
+          fi
+
+      - name: Explain Codecov upload status
+        run: |
+          echo "Codecov upload is disabled: codecov/codecov-action cannot run under"
+          echo "this repository's local-actions-only policy. Enable third-party"
+          echo "actions in Settings > Actions > General to restore it."

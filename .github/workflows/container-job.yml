@@ -1,0 +1,30 @@
+name: Container Job
+
+# Third workflow recovered from the concatenated main.yml.
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  container-job:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.11-slim
+      options: --cpus 2
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
+
+      - name: Run inside container
+        working-directory: repo
+        run: |
+          python -c "print('Running inside container')"
+          python --version

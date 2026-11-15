@@ -1,66 +1,39 @@
 name: Build Container
 
+# Rebuilt as a single valid workflow: the previous file was three workflows
+# concatenated, which broke YAML parsing on the `name:` keys.
+
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
 
       - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/cipher-tube:latestname: Build and Store Artifacts
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build
         run: |
-          mkdir output
-          echo "hello" > output/hello.txt
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Upload artifact to file container
-        uses: actions/upload-artifact@v4
-        with:
-          name: cipher-artifacts
-          path: output/name: Container Job
+      - name: Build image
+        working-directory: repo
+        run: |
+          docker build -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:latest" \
+                       -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:${GITHUB_SHA::7}" .
 
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  container-job:
-    runs-on: ubuntu-latest
-    container:
-      image: python:3.11-slim
-      options: --cpus 2
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run inside container
-        run: python -c "print('Running inside container')"
+      - name: Push image
+        run: |
+          docker push "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:latest"
+          docker push "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:${GITHUB_SHA::7}"
