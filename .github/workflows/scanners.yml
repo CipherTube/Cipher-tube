@@ -1,0 +1,93 @@
+name: Scanners
+
+# Vulnerability, secret and misconfiguration scanning with alerts.
+# Binaries are fetched and run directly rather than through actions.
+
+on:
+  push:
+    branches: [ main, master, development ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scanners:
+    name: Dependency, secret and filesystem scanners
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
+
+      - name: Install scanner binaries
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v8.18.4/gitleaks_8.18.4_linux_x64.tar.gz" \
+            | tar -xz -C /usr/local/bin gitleaks
+          curl -sSL "https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh" \
+            | sh -s -- -b /usr/local/bin >/dev/null
+          gitleaks version
+          trivy --version | head -1
+
+      - name: Secret scan (gitleaks)
+        continue-on-error: true
+        run: |
+          gitleaks detect --source repo --no-git --redact \
+            --report-format json --report-path gitleaks.json --exit-code 0 || true
+          python3 repo/scripts/ci/report.py gitleaks gitleaks.json
+
+      - name: Filesystem and misconfiguration scan (trivy)
+        continue-on-error: true
+        run: |
+          trivy fs --quiet --format json --output trivy.json \
+            --severity HIGH,CRITICAL repo || true
+          python3 repo/scripts/ci/report.py trivy trivy.json
+
+      - name: Dependency audit (npm)
+        working-directory: repo
+        continue-on-error: true
+        run: |
+          if [ -f package-lock.json ]; then
+            npm audit --json > ../npm-audit.json || true
+            python3 scripts/ci/report.py npm ../npm-audit.json
+          else
+            echo "no package-lock.json"
+          fi
+
+      - name: Dependency audit (python)
+        continue-on-error: true
+        run: |
+          pip install --quiet pip-audit fastapi uvicorn pydantic requests pytest
+          pip-audit --format json -o pip-audit.json || true
+          python3 repo/scripts/ci/report.py pip pip-audit.json
+
+      - name: Verdict, trace and alert
+        run: |
+          . repo/scripts/ci/lib.sh
+          SECRETS=$(python3 repo/scripts/ci/report.py gitleaks gitleaks.json --count)
+          VULNS=$(python3 repo/scripts/ci/report.py trivy trivy.json --count)
+          NPMV=$(python3 repo/scripts/ci/report.py npm npm-audit.json --count)
+          PIPS=$(python3 repo/scripts/ci/report.py pip pip-audit.json --count)
+          {
+            echo "### Scanners"
+            echo ""
+            echo "| check | findings |"
+            echo "|---|---|"
+            echo "| secrets (gitleaks) | ${SECRETS} |"
+            echo "| filesystem (trivy) | ${VULNS} |"
+            echo "| npm audit (high, critical) | ${NPMV} |"
+            echo "| pip-audit | ${PIPS} |"
+          } > summary.md
+          append_summary summary.md
+          trace_record scanners "secrets:${SECRETS} trivy:${VULNS} npm:${NPMV} pip:${PIPS}" "$((SECRETS + VULNS + NPMV + PIPS))" trivy.json
+          if [ "$((SECRETS + VULNS + NPMV + PIPS))" -gt 0 ]; then
+            notify alert "Scanners on ${GITHUB_SHA:0:7}" "${SECRETS} secret(s), ${VULNS} filesystem, ${NPMV} npm, ${PIPS} python. ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          else
+            notify success "Scanners on ${GITHUB_SHA:0:7}" "clean: no secrets, no high or critical findings"
+          fi

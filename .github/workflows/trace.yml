@@ -1,0 +1,46 @@
+name: Tracer
+
+# Traceability: one record per commit linking it to what every pipeline stage
+# found, written to a hash-chained ledger and to the run summary.
+
+on:
+  workflow_run:
+    workflows: [ "Analysis", "Scanners" ]
+    types: [ completed ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  trace:
+    name: Assemble trace record
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
+
+      - name: Collect stage outcomes
+        working-directory: repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/ci/collect_trace.py
+
+      - name: Write trace to the ledger and alert
+        run: |
+          . repo/scripts/ci/lib.sh
+          cp repo/trace.json "$TRACE_DIR/trace-${GITHUB_RUN_ID}.json"
+          {
+            echo "### Trace record"
+            echo ""
+            echo '```'
+            python3 repo/scripts/ci/render_trace.py repo/trace.json
+            echo '```'
+          } > summary.md
+          append_summary summary.md
+          python3 repo/scripts/ci/post_trace.py repo/trace.json
+          trace_record tracer "assembled" 0 repo/trace.json

@@ -1,0 +1,95 @@
+name: Analysis
+
+# Static analysis: lint, security lint, type check, complexity.
+# Shell-only by design: this repository allows local actions only.
+
+on:
+  push:
+    branches: [ main, master, development ]
+  pull_request:
+    branches: [ main, master, development ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        run: |
+          git clone --depth 1 \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
+
+      - name: Install analysers
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install ruff bandit radon
+
+      - name: Python lint (ruff)
+        working-directory: repo
+        continue-on-error: true
+        run: |
+          ruff check simulators scripts tests --output-format=concise > ../ruff.txt || true
+          wc -l < ../ruff.txt | xargs echo "ruff lines:"
+          head -40 ../ruff.txt
+
+      - name: Python security lint (bandit)
+        working-directory: repo
+        continue-on-error: true
+        run: |
+          bandit -r simulators scripts -f json -o ../bandit.json -q || true
+
+      - name: Format check (ruff format)
+        working-directory: repo
+        continue-on-error: true
+        run: ruff format --check simulators scripts || true
+
+      - name: Byte-compile every Python module
+        working-directory: repo
+        run: |
+          find simulators scripts tests -name '*.py' -print0 | xargs -0 -n1 python3 -m py_compile
+          echo "all modules compile"
+
+      - name: TypeScript type check
+        working-directory: repo
+        continue-on-error: true
+        run: |
+          if [ -f tsconfig.json ]; then
+            npm install --silent --no-fund --no-audit || true
+            npx --yes tsc --noEmit || true
+          else
+            echo "no tsconfig.json"
+          fi
+
+      - name: Complexity report
+        working-directory: repo
+        continue-on-error: true
+        run: radon cc simulators -s -a | tail -20
+
+      - name: Verdict, trace and alert
+        run: |
+          . repo/scripts/ci/lib.sh
+          RUFF=$(wc -l < ruff.txt 2>/dev/null || echo 0)
+          BANDIT=$(python3 repo/scripts/ci/report.py bandit bandit.json --count)
+          python3 repo/scripts/ci/report.py bandit bandit.json | head -20
+          {
+            echo "### Analysis"
+            echo ""
+            echo "commit \`${GITHUB_SHA:0:7}\` · run ${GITHUB_RUN_ID}"
+            echo ""
+            echo "| check | findings |"
+            echo "|---|---|"
+            echo "| ruff | ${RUFF} |"
+            echo "| bandit | ${BANDIT} |"
+          } > summary.md
+          append_summary summary.md
+          trace_record analysis annotated "$BANDIT" bandit.json
+          if [ "$BANDIT" -gt 0 ]; then
+            notify alert "Analysis on ${GITHUB_SHA:0:7}" "${BANDIT} security lint finding(s), ${RUFF} lint line(s). ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          else
+            notify success "Analysis on ${GITHUB_SHA:0:7}" "no security lint findings, ${RUFF} lint line(s)"
+          fi
