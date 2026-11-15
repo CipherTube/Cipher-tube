@@ -48,6 +48,7 @@ jobs:
           # the baseline holds three reviewed false positives (a variable name,
           # a package author field, a test constant); only NEW findings alert
           gitleaks detect --source repo --no-git --redact \
+            --config repo/.gitleaks.toml \
             --baseline-path repo/.gitleaks-baseline.json \
             --report-format json --report-path gitleaks.json --exit-code 0 || true
           python3 repo/scripts/ci/report.py gitleaks gitleaks.json

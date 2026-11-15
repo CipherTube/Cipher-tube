@@ -1,0 +1,14 @@
+# gitleaks configuration for CipherTube.
+#
+# Default rules stay on. The only exclusion is the baseline file itself, which
+# necessarily contains the text of reviewed false positives; scanning it would
+# report its own contents as new secrets.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "the reviewed baseline must not be scanned as source"
+paths = [
+  '''\.gitleaks-baseline\.json$''',
+]
