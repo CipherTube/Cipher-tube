@@ -1,14 +1,20 @@
 # gitleaks configuration for CipherTube.
 #
-# Default rules stay on. The only exclusion is the baseline file itself, which
-# necessarily contains the text of reviewed false positives; scanning it would
-# report its own contents as new secrets.
+# Default rules stay on for every file. Three identifiers are allowlisted by
+# their exact text rather than by file, so a genuine credential in the same
+# files is still reported:
+#   privateKeyEd25519    a variable name in zk_signaling_ring.js
+#   ightevenmckane187    the package author field in sdks/typescript/package.json
+#   PRIVATE_KEY_123      a test fixture constant
 
 [extend]
 useDefault = true
 
 [allowlist]
-description = "the reviewed baseline must not be scanned as source"
-paths = [
-  '''\.gitleaks-baseline\.json$''',
+description = "reviewed non-secrets"
+regexes = [
+  '''privateKeyEd25519''',
+  '''ightevenmckane187''',
+  '''PRIVATE_KEY_123''',
+  '''\.gitleaks-baseline\.json''',
 ]
