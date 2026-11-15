@@ -11,6 +11,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  # required because normalise_permissions.py edits .github/workflows/*.yml
+  workflows: write
 
 jobs:
   autofix:
