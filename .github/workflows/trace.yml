@@ -9,6 +9,13 @@ on:
     types: [ completed ]
   workflow_dispatch:
 
+env:
+  # alerts and trace posts use these; each is optional and skipped when unset
+  CI_HUB_URL: ${{ secrets.CI_HUB_URL }}
+  CI_HUB_KEY: ${{ secrets.CI_HUB_KEY }}
+  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
 permissions:
   contents: read
   actions: read
