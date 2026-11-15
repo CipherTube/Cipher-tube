@@ -1,131 +1,66 @@
-# Sovereign Cypher-Tube v1.5.0
+# CypherTube Sovereign Kernel — Phase 0
 
-A modular zero-trust cryptographic platform — Sentinel · Bolt · Palette.
+A runnable, dependency-free skeleton of the S0–S8 deterministic state machine:
+telemetry gates, recovery circuit breakers, and an append-only audit ledger.
 
-> **Status:** Active / Autonomous Architecture Node
-> **Core Engine:** Cryptographic Pipeline & Session State Manager
-> **Primary Datastore:** Redis
-> **Service Layer:** Express.js / Node.js (>=20)
-> **Encryption Protocol:** Cipher Tube Assembly Protocol (CTAP)
+Phase 0 proves the control loop works. It is not yet wired to real subsystems.
 
----
+## What is here
 
-## Architecture Overview
+```
+src/
+  telemetry/
+    types.ts        StateId, HealthSnapshot, AssertionGate, CircuitBreaker
+    registry.ts     in-process metric store (OTLP reader in phase 1)
+    verifier.ts     50 ms assertion loop with per-metric debounce
+    gates/index.ts  S0–S8 gates with the documented thresholds
+  kernel/
+    recovery/
+      types.ts      RecoveryHandler, Subsystem contracts
+      handlers.ts   DegradedIngest, SandboxOnly, SafeMode, EmergencyS0Reset
+      circuitBreaker.ts  metric → tier mapping, cooldowns, transition history
+    healthPoller.ts snapshot builder
+  ledger/
+    ledger.ts       append-only SHA-256 hash chain + last-known-good snapshot
+  api/
+    server.ts       HTTP surface: /health, /metrics, /simulate/failure,
+                    /agent/execute, /ledger
+  test/
+    kernel.test.ts  gates, tier mapping, ledger integrity
+```
 
-CypherTube is a zero-trust session and cryptographic pipeline built on Express 5 and Redis 5. It provides blinded session token management, cryptographically guarded gateway routing, real-time telemetry, and a modular workspace architecture spanning six core packages.
-
-### Core Packages (Workspaces)
-
-| Package | Role |
-|---------|------|
-| `sentinel` | Security boundary enforcement, middleware guards, rate limiting |
-| `bolt` | Performance optimization layer — pre-rendering, cache pooling, hot-path tuning |
-| `palette` | Design system and Storybook component library |
-| `tube` | Core cryptographic pipeline — cipher assembly, encryption/decryption |
-| `ui` | Cosmology map and client-facing interface rendering |
-| `wizard` | CLI tooling (`ctube`) and world management |
-
-### Key Source Modules (`src/`)
-
-- **`session_rotator.ts`** — Blinded SHA-256 token hashing, session creation, rotation with 5-second grace period
-- **`gatewayServer.ts`** — Express gateway with telemetry endpoint, ZK validation middleware, graceful SIGTERM shutdown
-- **`server.ts`** — Primary application server with Helmet, rate limiting, LRU cache, myth/ritual engine integration
-- **`cta.ts`** — Cipher Tube Assembly — `buildCipherTube` / `decryptCipherTube` / `fastHash`
-- **`crypto/verifier.ts`** — Cryptographic proof verification
-- **`gateway/sessionMiddleware.ts`** — `cipherTubeGateway` middleware for ZK validation boundaries
-- **`cache/redisPool.ts`** — Redis connection pooling
-
-### Supporting Directories
-
-- **`core/`** — Python telemetry and indexing nodes (`indexer.py`, `nodes.py`, `telemetry.py`)
-- **`cyphertube-core/`** — Packaged core library with its own `package.json`
-- **`governance/`** — OPA policy definitions
-- **`security/`** — Security audit artifacts and secret scanning baseline
-- **`docs/`** — API reference, philosophy, architecture documentation
-
----
-
-## Developer Quickstart
-
-### Prerequisites
-
-- Node.js >= 20.0.0
-- npm >= 10.0.0
-- Redis running locally or reachable via `REDIS_URL`
-
-### Install and Run
+## Run it
 
 ```bash
 npm install
-npm start
+npx tsc -p tsconfig.json
+node --test dist/test/kernel.test.js     # 3 tests
+PORT=8080 node dist/api/server.js        # normal
+PORT=8080 node dist/api/server.js --demo # injects a drift spike after 3 s
 ```
 
-### Environment
-
-Copy `.env.example` to `.env` and configure:
-
-- `REDIS_URL` — Redis connection string
-- `GATEWAY_PORT` — Gateway server port (default: 8080)
-- `NODE_ENV` — `production` / `development` / `test`
-
-### Testing
+## Prove the control loop
 
 ```bash
-# Run all workspace tests
-npm test
-
-# Run sovereign OS core tests
-npx vitest tests/unit/sovereign-os.test.ts
-
-# Integration tests
-npm run test:integration
-
-# Security scan
-npm run security:scan
+curl -s localhost:8080/health
+curl -s -X POST "localhost:8080/simulate/failure?value=22"
+curl -s localhost:8080/health   # transitions: DEGRADED_INGEST / E_INGEST_DESYNC
 ```
 
----
+The breaker maps `s8.ingest.*` to the cheapest tier that contains it. It never
+jumps straight to an S0 reset for a transient drift, and every transition is
+recorded with metric, code and timestamp.
 
-## Current Capabilities
+## Deliberate Phase 0 limits
 
-- ✅ Autonomous repository synchronization
-- ✅ State and session recovery with blinded token storage
-- ✅ Real-time gateway telemetry and diagnostics
-- ✅ Rate limiting and Helmet security headers
-- ✅ Graceful shutdown with Redis connection cleanup
-- ✅ Session rotation with 5-second grace period (race-condition tolerant)
-- ✅ LRU in-process cache for hot-path optimization
-- ✅ Pre-rendered static UI components (Bolt optimization)
-- ✅ OPA governance policy testing
+- Metrics are in-process, not real OTLP. Phase 1 swaps `registry.ts` for an
+  OpenTelemetry metric reader.
+- Handlers log and flip mode flags instead of touching real subsystems.
+- No signed governance bundle yet. Phase 2 adds cosign verification and the
+  constitution hash gate behind real files.
+- Ledger is in memory. Phase 2 persists it append-only on disk or Postgres.
 
----
+## Why this shape
 
-## Architecture Assessment (2026-08-13)
-
-For the full detailed assessment, see [`ASSESSMENT.md`](./ASSESSMENT.md).
-
-### Build Priorities (Roadmap)
-
-1. **Session Payload Serialization** — Migrate from raw `userId` string to a versioned, typed `SessionPayload` with metadata, scopes, issued-at, and rotation lineage tracking.
-2. **Redis Memory & Eviction Policy** — Explicit `maxmemory-policy` configuration, `INFO`-based memory monitoring, and cache warmup/teardown strategy.
-3. **Zero-Downtime Key Rotation** — Transactional rotation (create new → verify → expire old) with challenge-response handshake validation.
-4. **High-Throughput Metrics Pipeline** — Redis `INCR` / `HINCRBY` counters for request/rotation/failure metrics with periodic flush to an aggregator.
-
-### Architecture Guardrails (What to Avoid)
-
-- ❌ Unencrypted transient storage layers (LRU cache entries with sensitive data must be encrypted)
-- ❌ Monolithic state coupling outside the Express/Redis pipeline (Python `core/` modules should be isolated as a sidecar or migrated to TypeScript)
-- ❌ Vendor lock-in proprietary dependencies lacking data rights compliance
-
----
-
-## License
-
-MIT — © 2026 Sovereign Cypher-Tube.
-
-
----
-
-## 🗺️ Roadmap
-
-The consolidated project roadmap lives in [ROADMAP.md](./ROADMAP.md) — the four build priorities ([#463](./issues/463)–[#465](./issues/465)) and the multi-platform distribution phases from [PLATFORM_SHIP_PLAN.md](./PLATFORM_SHIP_PLAN.md). Current tag: [v1.6.0-alpha.1](https://github.com/CipherTube/Cipher-tube/releases/tag/v1.6.0-alpha.1).
+Banks do not buy architecture diagrams. They buy a control loop they can watch
+catch a failure. This skeleton is the smallest thing that does that.

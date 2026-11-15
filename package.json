@@ -1,64 +1,15 @@
 {
-  "name": "cipher-tube",
-  "version": "1.5.0",
+  "name": "cyphertube-kernel",
+  "version": "0.1.0",
   "private": true,
-  "description": "Modular zero-trust platform — Sentinel · Bolt · Palette",
-  "workspaces": [
-    "sentinel",
-    "bolt",
-    "palette",
-    "tube",
-    "ui",
-    "wizard"
-  ],
+  "type": "module",
   "scripts": {
-    "install:all": "npm install --workspaces",
-    "test": "npm run test --workspaces --if-present",
-    "test:unit": "npm run test:unit --workspaces --if-present",
-    "test:integration": "npm run test:integration --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "lint:fix": "npm run lint:fix --workspaces --if-present",
-    "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md,yml,yaml}'",
-    "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md,yml,yaml}'",
-    "storybook": "cd palette && npm run storybook",
-    "storybook:build": "cd palette && npm run storybook:build",
-    "policy:test": "opa test governance/policies/ -v",
-    "policy:fmt": "opa fmt -w governance/policies/",
-    "security:scan": "detect-secrets scan --all-files --baseline .secrets.baseline",
-    "prepare": "echo 'Ensure git hooks are configured'"
+    "build": "tsc -p tsconfig.json",
+    "start": "node --experimental-strip-types src/api/server.ts",
+    "demo": "node --experimental-strip-types src/api/server.ts --demo"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/express": "^5.0.6",
-    "@types/jest": "^30.0.0",
-    "@types/js-yaml": "^4.0.9",
-    "@types/supertest": "^7.2.0",
-    "@typescript-eslint/eslint-plugin": "^8.59.1",
-    "@typescript-eslint/parser": "^8.59.1",
-    "eslint": "^9.0.0",
-    "globals": "^17.6.0",
-    "jest-environment-node": "^30.4.1",
-    "prettier": "^3.3.0",
-    "stylelint": "^16.0.0",
-    "supertest": "^7.2.2",
-    "ts-jest": "^29.4.11",
-    "tsx": "^4.22.4",
-    "typescript": "^5.5.0",
-    "typescript-eslint": "^8.59.1"
-  },
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
-  },
-  "dependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.4.1",
-    "helmet": "^8.1.0",
-    "js-yaml": "^4.1.0",
-    "lru-cache": "^11.3.5",
-    "redis": "^5.12.1"
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
   }
 }
