@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cipher-tube-sdk"
+version = "0.1.0"
+description = "Official Python SDK for Cipher-Tube C2PA Cryptographic Verification & Provenance Engine"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    { name = "ightevenmckane187", email = "ightevenmckane@github.com" }
+]
+keywords = ["c2pa", "cryptography", "jumbf", "provenance", "cipher-tube"]
+dependencies = [
+    "requests>=2.28.0",
+    "pydantic>=2.0.0",
+    "typing-extensions>=4.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/ightevenmckane187/Cipher-tube"
+Repository = "https://github.com/ightevenmckane187/Cipher-tube.git"

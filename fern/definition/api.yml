@@ -1,0 +1,63 @@
+name: cipher-tube-api
+error-discrimination:
+  strategy: status-code
+
+types:
+  ManifestStore:
+    properties:
+      manifestId: string
+      jumbfData: string
+      version: string
+
+  HardBinding:
+    properties:
+      hashAlgorithm: string
+      digest: string
+      targetUri: string
+
+  ClaimSignature:
+    properties:
+      signerId: string
+      signatureValue: string
+      certificateChain: list<string>
+      timestamp: string
+
+  VerificationRequest:
+    properties:
+      assetPayload: string
+      manifestStore: ManifestStore
+      hardBindings: list<HardBinding>
+      claimSignature: ClaimSignature
+
+  VerificationResponse:
+    properties:
+      isValid: boolean
+      tamperDetected: boolean
+      verifiedClaimsCount: integer
+      message: string
+
+services:
+  http:
+    C2paVerificationService:
+      auth: true
+      base-path: /api/v1/c2pa
+      endpoints:
+        verifyManifest:
+          method: POST
+          path: /verify
+          docs: Verifies JUMBF-serialized manifest stores, hard bindings, and digital claim signatures.
+          request:
+            body: VerificationRequest
+          response:
+            type: VerificationResponse
+          errors:
+            - InvalidManifestError
+            - SignatureVerificationFailedError
+
+errors:
+  InvalidManifestError:
+    code: 400
+    docs: Thrown when the JUMBF manifest structure is malformed.
+  SignatureVerificationFailedError:
+    code: 401
+    docs: Thrown when cryptographic claim signatures fail validation.

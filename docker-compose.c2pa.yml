@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  cipher-tube-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cipher-tube-dashboard-server
+    ports:
+      - "8001:8001"
+    environment:
+      - CIPHER_TUBE_ENV=development
+      - SIGNER_AUTHORITY=ightevenmckane187-authority
+    volumes:
+      - .:/app
+    command: python simulators/dashboard_server.py
+    restart: unless-stopped
+
+  cipher-tube-interceptor-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cipher-tube-3rd-eye-interceptor
+    environment:
+      - CIPHER_TUBE_ENV=development
+    volumes:
+      - .:/app
+    command: python simulators/adb_threat_sweep.py
+    depends_on:
+      - cipher-tube-dashboard
+    restart: on-failure
+
+  cipher-tube-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cipher-tube-verification-engine
+    environment:
+      - CIPHER_TUBE_ENV=test
+    volumes:
+      - .:/app
+    command: pytest tests/ -v
+    profiles:
+      - test
