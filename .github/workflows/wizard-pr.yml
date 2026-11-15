@@ -1,16 +1,11 @@
 name: "🧙‍♂️ Wizard · Auto-Fix & Repair"
 
+# Parked: this workflow needs GitHub-owned or third-party actions, which the
+# organisation currently blocks (Settings > Actions > General). It runs only
+# on manual dispatch so pushes stay green. Restore the original triggers once
+# that policy allows those actions.
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
-  issue_comment:
-    types: [created]
-
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  workflow_dispatch:
 
 jobs:
   wizard-analyze:

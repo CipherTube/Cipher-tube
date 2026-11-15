@@ -1,14 +1,11 @@
 name: "🧙‍♂️ Wizard · Main Sentinel"
 
+# Parked: this workflow needs GitHub-owned or third-party actions, which the
+# organisation currently blocks (Settings > Actions > General). It runs only
+# on manual dispatch so pushes stay green. Restore the original triggers once
+# that policy allows those actions.
 on:
-  push:
-    branches: [main]
-  workflow_run:
-    workflows: ["Build Container", "Build and Store Artifacts"]
-    types: [completed]
-
-permissions:
-  contents: read
+  workflow_dispatch:
 
 jobs:
   main-health-check:
