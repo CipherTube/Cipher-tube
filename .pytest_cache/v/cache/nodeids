@@ -1,0 +1,5 @@
+[
+  "tests/test_audit_and_webhook.py::test_audit_logger_records_event",
+  "tests/test_audit_and_webhook.py::test_webhook_dispatcher_alert",
+  "tests/test_c2pa_verification.py::test_jumbf_simulator_payload_structure"
+]

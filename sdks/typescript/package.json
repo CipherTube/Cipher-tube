@@ -1,0 +1,19 @@
+{
+  "name": "@cipher-tube/sdk",
+  "version": "0.1.0",
+  "description": "Official TypeScript/Node SDK for Cipher-Tube C2PA Cryptographic Engine",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ightevenmckane187/Cipher-tube.git"
+  },
+  "keywords": ["c2pa", "cryptography", "jumbf", "cipher-tube", "sdk"],
+  "author": "ightevenmckane187",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc --build",
+    "prepublishOnly": "npm run build"
+  }
+}
