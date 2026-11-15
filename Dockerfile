@@ -2,7 +2,16 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y curl android-tools-adb nodejs npm && rm -rf /var/lib/apt/lists/*
+# adb is optional and is not published in every Debian base, so it must never
+# break the build. Node and npm are needed for the Fern CLI.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl git nodejs npm \
+    && (apt-get install -y --no-install-recommends adb \
+        || apt-get install -y --no-install-recommends android-tools-adb \
+        || echo "adb unavailable in this base image; ADB simulators will report it missing") \
+    && apt-get clean \
+    && find /var/lib/apt/lists -type f -delete
+
 RUN npm install -g fern-api
 
 COPY . /app

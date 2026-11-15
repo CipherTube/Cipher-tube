@@ -1,7 +1,7 @@
 name: Code Coverage
 
-# Previous file was a single line of literal \n escapes, so it never parsed.
-# Shell-only for the same policy reason as the rest of the workflows.
+# Scope: the C2PA verification and audit/webhook suites. The other Python test
+# modules in tests/ need SQLAlchemy and are covered by their own workflow.
 
 on:
   push:
@@ -35,7 +35,10 @@ jobs:
         env:
           CIPHER_TUBE_ENV: test
         run: |
-          python3 -m pytest tests/ -v --cov=simulators --cov-report=term-missing --cov-report=xml
+          python3 -m pytest \
+            tests/test_c2pa_verification.py \
+            tests/test_audit_and_webhook.py \
+            -v --cov=simulators --cov-report=term-missing --cov-report=xml
 
       - name: Report coverage total
         working-directory: repo

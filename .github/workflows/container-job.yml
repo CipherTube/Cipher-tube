@@ -1,6 +1,6 @@
 name: Container Job
 
-# Third workflow recovered from the concatenated main.yml.
+# python:3.11-slim does not ship git, so the clone step installs it first.
 
 on:
   push:
@@ -18,6 +18,11 @@ jobs:
       options: --cpus 2
 
     steps:
+      - name: Install git in container
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates
+
       - name: Checkout repository
         run: |
           git clone --depth 1 \
