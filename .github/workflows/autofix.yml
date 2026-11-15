@@ -11,8 +11,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  # required because normalise_permissions.py edits .github/workflows/*.yml
-  workflows: write
 
 jobs:
   autofix:
@@ -50,10 +48,10 @@ jobs:
             git diff --stat
           fi
 
-      - name: Normalise workflow permissions
+      - name: Audit workflow permissions
         working-directory: repo
         continue-on-error: true
-        run: python3 scripts/ci/normalise_permissions.py
+        run: python3 scripts/ci/normalise_permissions.py --check
 
       - name: Commit and open a pull request
         env:
