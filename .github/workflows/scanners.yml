@@ -45,7 +45,10 @@ jobs:
       - name: Secret scan (gitleaks)
         continue-on-error: true
         run: |
+          # the baseline holds three reviewed false positives (a variable name,
+          # a package author field, a test constant); only NEW findings alert
           gitleaks detect --source repo --no-git --redact \
+            --baseline-path repo/.gitleaks-baseline.json \
             --report-format json --report-path gitleaks.json --exit-code 0 || true
           python3 repo/scripts/ci/report.py gitleaks gitleaks.json
 
@@ -70,8 +73,13 @@ jobs:
       - name: Dependency audit (python)
         continue-on-error: true
         run: |
-          pip install --quiet pip-audit fastapi uvicorn pydantic requests pytest
-          pip-audit --format json -o pip-audit.json || true
+          # audit the project's own runtime surface, not the runner's preinstalled
+          # packages, otherwise every run reports a hundred unrelated advisories
+          python3 -m venv .audit
+          .audit/bin/pip install --quiet --upgrade pip
+          .audit/bin/pip install --quiet fastapi uvicorn pydantic requests
+          .audit/bin/pip install --quiet pip-audit
+          .audit/bin/pip-audit --format json -o pip-audit.json || true
           python3 repo/scripts/ci/report.py pip pip-audit.json
 
       - name: Verdict, trace and alert
