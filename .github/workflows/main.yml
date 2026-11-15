@@ -1,7 +1,8 @@
 name: Build Container
 
 # Rebuilt as a single valid workflow: the previous file was three workflows
-# concatenated, which broke YAML parsing on the `name:` keys.
+# concatenated, which broke YAML parsing on the duplicate `name:` keys.
+# GHCR requires a lowercase repository name, so the owner is lowercased first.
 
 on:
   push:
@@ -11,6 +12,9 @@ on:
 permissions:
   contents: read
   packages: write
+
+env:
+  IMAGE_OWNER: ${{ github.repository_owner }}
 
 jobs:
   build:
@@ -30,10 +34,13 @@ jobs:
       - name: Build image
         working-directory: repo
         run: |
-          docker build -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:latest" \
-                       -t "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:${GITHUB_SHA::7}" .
+          OWNER_LC="$(echo "${IMAGE_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+          IMAGE="ghcr.io/${OWNER_LC}/cipher-tube"
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_ENV"
+          docker build -t "${IMAGE}:latest" -t "${IMAGE}:${SHORT_SHA}" .
 
       - name: Push image
         run: |
-          docker push "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:latest"
-          docker push "ghcr.io/${GITHUB_REPOSITORY_OWNER}/cipher-tube:${GITHUB_SHA::7}"
+          docker push "${IMAGE}:latest"
+          docker push "${IMAGE}:$(echo "${GITHUB_SHA}" | cut -c1-7)"
