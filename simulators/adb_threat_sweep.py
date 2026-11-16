@@ -1,7 +1,7 @@
-import os
-import subprocess
 import json
+import subprocess
 from datetime import datetime
+
 try:
     from .audit_logger import CipherTubeAuditLogger
 except ImportError:
@@ -11,12 +11,18 @@ try:
 except ImportError:
     from webhook_dispatcher import CipherTubeWebhookDispatcher
 
+
 class AdbThreatSweep:
     def __init__(self, target_device_dir: str = "/sdcard/CipherTube/"):
         self.target_device_dir = target_device_dir
         self.audit_logger = CipherTubeAuditLogger()
         self.webhook_dispatcher = CipherTubeWebhookDispatcher()
-        self.known_malicious_signatures = {"rogue_inject", "unauth_sidecar.jumbf", "malware_apk.apk", "exploit_payload"}
+        self.known_malicious_signatures = {
+            "rogue_inject",
+            "unauth_sidecar.jumbf",
+            "malware_apk.apk",
+            "exploit_payload",
+        }
 
     def run_adb(self, cmd: list) -> str:
         res = subprocess.run(["adb"] + cmd, capture_output=True, text=True)
@@ -29,7 +35,11 @@ class AdbThreatSweep:
             devices_raw = self.run_adb(["devices"])
             active_devices = [l for l in devices_raw.splitlines() if "\tdevice" in l]
             if not active_devices:
-                return {"status": "OFFLINE", "threatsFound": 0, "timestamp": datetime.utcnow().isoformat()}
+                return {
+                    "status": "OFFLINE",
+                    "threatsFound": 0,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
         except Exception as e:
             return {"status": "ERROR", "error": str(e)}
 
@@ -50,28 +60,32 @@ class AdbThreatSweep:
                 asset_id="device-adb-threat-sweep",
                 status="BREACH_DETECTED",
                 tamper_detected=True,
-                details={"rogueArtifacts": detected_threats, "targetDir": self.target_device_dir}
+                details={
+                    "rogueArtifacts": detected_threats,
+                    "targetDir": self.target_device_dir,
+                },
             )
 
             self.webhook_dispatcher.dispatch_alert(
                 asset_id="device-adb-threat-sweep",
                 status="MOBILE_SECURITY_BREACH",
                 tamper_detected=True,
-                details={"rogueArtifacts": detected_threats}
+                details={"rogueArtifacts": detected_threats},
             )
 
             return {
                 "status": "BREACH",
                 "threatsFound": len(detected_threats),
                 "artifacts": detected_threats,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             }
 
         return {
             "status": "CLEAN",
             "threatsFound": 0,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
+
 
 if __name__ == "__main__":
     sweeper = AdbThreatSweep()

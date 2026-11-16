@@ -1,32 +1,40 @@
-import os
 import json
+import os
 from datetime import datetime
+
 try:
     from .webhook_dispatcher import CipherTubeWebhookDispatcher
 except ImportError:
     from webhook_dispatcher import CipherTubeWebhookDispatcher
 
+
 class CipherTubeAuditLogger:
-    def __init__(self, log_dir: str = "./audit_logs", log_filename: str = "audit_log.jsonl"):
+    def __init__(
+        self, log_dir: str = "./audit_logs", log_filename: str = "audit_log.jsonl"
+    ):
         self.log_dir = log_dir
         os.makedirs(self.log_dir, exist_ok=True)
         self.log_path = os.path.join(self.log_dir, log_filename)
         self.webhook_dispatcher = CipherTubeWebhookDispatcher()
 
-    def log_event(self, asset_id: str, status: str, tamper_detected: bool, details: dict = None) -> dict:
+    def log_event(
+        self, asset_id: str, status: str, tamper_detected: bool, details: dict = None
+    ) -> dict:
         event = {
             "timestamp": datetime.utcnow().isoformat(),
             "assetId": asset_id,
             "status": status,
             "tamperDetected": tamper_detected,
-            "details": details or {}
+            "details": details or {},
         }
 
         with open(self.log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(event) + "\n")
 
         if tamper_detected or status != "SUCCESS":
-            self.webhook_dispatcher.dispatch_alert(asset_id, status, tamper_detected, details)
+            self.webhook_dispatcher.dispatch_alert(
+                asset_id, status, tamper_detected, details
+            )
 
         return event
 
@@ -52,5 +60,5 @@ class CipherTubeAuditLogger:
             "totalEvents": total_events,
             "tamperAlerts": tamper_alerts,
             "successCount": success_count,
-            "logFile": self.log_path
+            "logFile": self.log_path,
         }

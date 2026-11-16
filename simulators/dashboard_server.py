@@ -1,7 +1,9 @@
-import os
 import json
+import os
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+
 try:
     from .audit_logger import CipherTubeAuditLogger
 except ImportError:
@@ -10,11 +12,12 @@ except ImportError:
 app = FastAPI(title="Cipher-Tube Real-Time Security Dashboard", version="1.0.0")
 logger = CipherTubeAuditLogger()
 
+
 @app.get("/api/analytics")
 def get_analytics():
     summary = logger.get_audit_summary()
     events = []
-    
+
     if os.path.exists(logger.log_path):
         with open(logger.log_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -25,6 +28,7 @@ def get_analytics():
                         continue
     events.reverse()
     return {"summary": summary, "recentEvents": events[:20]}
+
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard_home():
@@ -80,6 +84,8 @@ def dashboard_home():
     """
     return HTMLResponse(content=html_content)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("dashboard_server:app", host="0.0.0.0", port=8001, reload=True)

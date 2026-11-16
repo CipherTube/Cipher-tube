@@ -1,7 +1,7 @@
-import os
-import sys
-import subprocess
 import json
+import subprocess
+import sys
+
 
 class CipherTubeReleaseTagger:
     def __init__(self, bump_type: str = "patch"):
@@ -31,9 +31,17 @@ class CipherTubeReleaseTagger:
 
         subprocess.run(["fern", "generate", "--group", "local"])
         subprocess.run(["git", "add", "."])
-        subprocess.run(["git", "commit", "-m", f"chore(release): prepare release v{new_ver} [skip ci]"])
+        subprocess.run(
+            [
+                "git",
+                "commit",
+                "-m",
+                f"chore(release): prepare release v{new_ver} [skip ci]",
+            ]
+        )
         subprocess.run(["git", "tag", "-a", f"v{new_ver}", "-m", f"Release v{new_ver}"])
         print(f"Release v{new_ver} tagged successfully.")
+
 
 if __name__ == "__main__":
     bump = sys.argv[1] if len(sys.argv) > 1 else "patch"

@@ -5,6 +5,7 @@ GitHub blocks Actions tokens from creating pull requests when the org disallows
 it, so a refusal is not a failure: the branch is already pushed, and the compare
 link is written to the step summary for a human to click.
 """
+
 from __future__ import annotations
 
 import json
@@ -38,16 +39,21 @@ def main():
         "title": "chore: automated lint and dependency fixes",
         "head": branch,
         "base": base,
-        "body": ("Automated fixes from the Autofix workflow.\n\n"
-                 "Lint, formatting and lockfile changes only. "
-                 "Review the diff before merging."),
+        "body": (
+            "Automated fixes from the Autofix workflow.\n\n"
+            "Lint, formatting and lockfile changes only. "
+            "Review the diff before merging."
+        ),
     }
     req = urllib.request.Request(
         f"https://api.github.com/repos/{repo}/pulls",
         data=json.dumps(body).encode(),
-        headers={"Authorization": f"Bearer {token}",
-                 "Accept": "application/vnd.github+json"},
-        method="POST")
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+        },
+        method="POST",
+    )
     try:
         with urllib.request.urlopen(req) as r:
             d = json.load(r)
@@ -57,9 +63,11 @@ def main():
     except urllib.error.HTTPError as exc:
         print(f"pull request not created: {exc.code}")
         print("branch is pushed, open it here:", compare)
-        summarise("### Autofix\n\nBranch `%s` is pushed. "
-                  "Actions cannot open pull requests in this organisation, "
-                  "so open one here: %s" % (branch, compare))
+        summarise(
+            "### Autofix\n\nBranch `%s` is pushed. "
+            "Actions cannot open pull requests in this organisation, "
+            "so open one here: %s" % (branch, compare)
+        )
         return 0
 
 

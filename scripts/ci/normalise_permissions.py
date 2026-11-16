@@ -7,6 +7,7 @@
 Autofix uses --check on purpose: a bot must not silently rewrite CI permissions,
 and the Actions token is not allowed to push workflow changes anyway.
 """
+
 from __future__ import annotations
 
 import os
@@ -27,10 +28,10 @@ def main(argv):
             continue
         path = os.path.join(ROOT, name)
         src = open(path).read()
-        if re.search(r"^permissions:", src, re.M):
+        if re.search(r"^permissions:", src, re.MULTILINE):
             already.append(name)
             continue
-        m = re.search(r"^jobs:", src, re.M)
+        m = re.search(r"^jobs:", src, re.MULTILINE)
         if not m:
             skipped.append(name)
             continue
@@ -38,7 +39,7 @@ def main(argv):
             changed.append(name)
             continue
         block = "permissions:\n  contents: read\n\n"
-        open(path, "w").write(src[:m.start()] + block + src[m.start():])
+        open(path, "w").write(src[: m.start()] + block + src[m.start() :])
         changed.append(name)
 
     verb = "would add" if check_only else "added"
