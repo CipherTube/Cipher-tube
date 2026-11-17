@@ -1,4 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import crypto from 'crypto';
+
+// Bolt Optimization: Hoist static performance window evaluation constant to prevent recreation
+const PERFORMANCE_WINDOW = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 /**
  * Validates incoming structural proofs using zero-knowledge verification principles.
@@ -56,14 +60,14 @@ export async function verifyCryptographicProof(rawProof: string, expectedHash?: 
 
         // Enforce a strict time-window constraint (e.g., 5 minutes) to mitigate replay vectors
         const currentEpoch = Date.now();
-        const performanceWindow = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-        if (Math.abs(currentEpoch - salt) > performanceWindow) {
+        if (Math.abs(currentEpoch - salt) > PERFORMANCE_WINDOW) {
             return false;
         }
 
         // Reconstruct the validation matrix using our native SHA-256 pipeline
-        const verificationMatrix = crypto.createHmac('sha256', String(salt));
+        // Bolt Optimization: Replace slower String(salt) constructor with coercive "" + salt
+        const verificationMatrix = crypto.createHmac('sha256', "" + salt);
         verificationMatrix.update(structuralHash);
 
         // Bolt Optimization: Obtain the HMAC digest directly as a Buffer.

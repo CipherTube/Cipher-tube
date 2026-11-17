@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import crypto from 'crypto';
 
 /**
@@ -16,7 +17,8 @@ export function generateCipherProof(structuralHash: string): { cipherHash: strin
     const salt = Date.now();
 
     // Reconstruct the exact signature using our fast-path SHA-256 HMAC pipeline
-    const verificationMatrix = crypto.createHmac('sha256', String(salt));
+    // Bolt Optimization: Replace slower String(salt) constructor with coercive "" + salt
+    const verificationMatrix = crypto.createHmac('sha256', "" + salt);
     verificationMatrix.update(structuralHash);
     const challengeProof = verificationMatrix.digest('hex');
 
