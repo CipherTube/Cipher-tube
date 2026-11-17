@@ -1,5 +1,8 @@
 import crypto from 'crypto';
 
+// Bolt Optimization: Hoist the static performance window to a module-level constant to avoid recalculation/re-allocation.
+const PERFORMANCE_WINDOW = 300000; // 5 minutes in milliseconds
+
 /**
  * Validates incoming structural proofs using zero-knowledge verification principles.
  * Verifies that the state token matches structural parameters without revealing origins.
@@ -17,9 +20,10 @@ export async function verifyCryptographicProof(rawProof: string, expectedHash?: 
 
     try {
         // Decode the structural payload
+        // Using Buffer.from is 100% robust against base64url encoding and varying padding/whitespace.
         const bufferPayload = Buffer.from(rawProof, 'base64');
+        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
         let parsedPayload: any;
-
         try {
             parsedPayload = JSON.parse(bufferPayload.toString('utf8'));
         } catch {
@@ -56,14 +60,14 @@ export async function verifyCryptographicProof(rawProof: string, expectedHash?: 
 
         // Enforce a strict time-window constraint (e.g., 5 minutes) to mitigate replay vectors
         const currentEpoch = Date.now();
-        const performanceWindow = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-        if (Math.abs(currentEpoch - salt) > performanceWindow) {
+        if (Math.abs(currentEpoch - salt) > PERFORMANCE_WINDOW) {
             return false;
         }
 
         // Reconstruct the validation matrix using our native SHA-256 pipeline
-        const verificationMatrix = crypto.createHmac('sha256', String(salt));
+        // Bolt Optimization: Use fast empty-string coercion instead of String(salt).
+        const verificationMatrix = crypto.createHmac('sha256', '' + salt);
         verificationMatrix.update(structuralHash);
 
         // Bolt Optimization: Obtain the HMAC digest directly as a Buffer.
