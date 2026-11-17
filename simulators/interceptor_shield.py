@@ -1,5 +1,5 @@
-import json
 from datetime import datetime
+
 try:
     from .audit_logger import CipherTubeAuditLogger
 except ImportError:
@@ -8,6 +8,7 @@ try:
     from .webhook_dispatcher import CipherTubeWebhookDispatcher
 except ImportError:
     from webhook_dispatcher import CipherTubeWebhookDispatcher
+
 
 class CypherTubeInterceptorShield:
     def __init__(self):
@@ -19,15 +20,15 @@ class CypherTubeInterceptorShield:
         manifest = verification_request.get("manifestStore", {})
         bindings = verification_request.get("hardBindings", [])
         signature = verification_request.get("claimSignature", {})
-        
+
         signer_id = signature.get("signerId", "unknown")
         manifest_id = manifest.get("manifestId", "unknown")
-        
+
         if signer_id in self.blacklisted_signers:
             return self._trigger_counter_measure(
                 asset_id=manifest_id,
                 threat_type="HOSTILE_SIGNER_INJECTION",
-                details={"signerId": signer_id, "action": "Intercepted and Blocked"}
+                details={"signerId": signer_id, "action": "Intercepted and Blocked"},
             )
 
         for binding in bindings:
@@ -36,40 +37,42 @@ class CypherTubeInterceptorShield:
                 return self._trigger_counter_measure(
                     asset_id=manifest_id,
                     threat_type="MALFORMED_CRYPTO_DIGEST",
-                    details={"digest": digest, "action": "Payload Sanitized & Dropped"}
+                    details={"digest": digest, "action": "Payload Sanitized & Dropped"},
                 )
 
         return {
             "status": "APPROVED",
             "threatDetected": False,
-            "interceptedAt": datetime.utcnow().isoformat()
+            "interceptedAt": datetime.utcnow().isoformat(),
         }
 
-    def _trigger_counter_measure(self, asset_id: str, threat_type: str, details: dict) -> dict:
+    def _trigger_counter_measure(
+        self, asset_id: str, threat_type: str, details: dict
+    ) -> dict:
         alert_details = {
             "threatType": threat_type,
             "mitigationAction": details.get("action", "Blocked"),
             "rawDetails": details,
-            "interceptorVersion": "3.0-intercept"
+            "interceptorVersion": "3.0-intercept",
         }
 
         self.audit_logger.log_event(
             asset_id=asset_id,
             status="INTERCEPTED_THREAT",
             tamper_detected=True,
-            details=alert_details
+            details=alert_details,
         )
 
         self.webhook_dispatcher.dispatch_alert(
             asset_id=asset_id,
             status="DEFENSIVE_BLOCK",
             tamper_detected=True,
-            details=alert_details
+            details=alert_details,
         )
 
         return {
             "status": "BLOCKED",
             "threatDetected": True,
             "threatType": threat_type,
-            "message": "Access denied by CypherTube 3rd-Eye Interceptor Shield."
+            "message": "Access denied by CypherTube 3rd-Eye Interceptor Shield.",
         }
