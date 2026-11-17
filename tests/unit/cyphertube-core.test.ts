@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import crypto from "crypto";
 
@@ -324,6 +325,26 @@ describe("CypherTube Sovereign, Zero-Knowledge P2P Streaming Engine Core", () =>
 
       expect(() => verifier.verifyManifest(expiredManifest)).toThrow("revoked");
     });
+
+    it("should reject malformed revocation tickets or invalid field types", () => {
+      expect(() => verifier.ingestRevocationTicket(null)).toThrow("Invalid ticket format");
+      expect(() => verifier.ingestRevocationTicket([])).toThrow("Invalid ticket format");
+      expect(() => verifier.ingestRevocationTicket({})).toThrow("Invalid ticket fields");
+      expect(() => verifier.ingestRevocationTicket({
+        revocation_target: 123, // should be string
+        revocation_epoch: Math.floor(Date.now() / 1000),
+        reason_code: "KEY_COMPROMISE",
+        issuer_node_did: "did:ctube:node-1",
+        revocation_signature: "",
+      })).toThrow("Invalid ticket fields");
+      expect(() => verifier.ingestRevocationTicket({
+        revocation_target: "target",
+        revocation_epoch: "not-a-number", // should be number
+        reason_code: "KEY_COMPROMISE",
+        issuer_node_did: "did:ctube:node-1",
+        revocation_signature: "",
+      })).toThrow("Invalid ticket fields");
+    });
   });
 
   describe("Layer 3: End-to-End Encrypted Group CRDT Storage (PlaylistMetadataStore)", () => {
@@ -578,6 +599,67 @@ describe("CypherTube Sovereign, Zero-Knowledge P2P Streaming Engine Core", () =>
         { $set: { routing_status: "FAILOVER_ACTIVE" } },
         { upsert: true },
       );
+    });
+
+    it("should handle malformed, invalid, or replayed signaling packets safely", async () => {
+      // 1. Null, array, or empty packets should not crash
+      await expect(ring.handleIncomingSignal(null)).resolves.not.toThrow();
+      await expect(ring.handleIncomingSignal([])).resolves.not.toThrow();
+      await expect(ring.handleIncomingSignal({})).resolves.not.toThrow();
+
+      // 2. Malformed packet field types should not crash
+      await expect(ring.handleIncomingSignal({
+        senderDid: 123,
+        windowId: "win",
+        frame: "{}",
+        signature: "sig"
+      })).resolves.not.toThrow();
+
+      // 3. Malformed JSON frame should not crash
+      await expect(ring.handleIncomingSignal({
+        senderDid: "did:ctube:node-3",
+        windowId: "some-window",
+        frame: "invalid-json{",
+        signature: "sig"
+      })).resolves.not.toThrow();
+
+      // 4. Invalid/NaN timestamp in frame should not bypass replay window or crash
+      const orderedDids = [
+        "did:ctube:node-1",
+        "did:ctube:node-2",
+        "did:ctube:node-3",
+      ];
+      const { currentWindowId } = await ring.initializeLiveRing(
+        "stream-1",
+        orderedDids,
+      );
+
+      const ringCtx = (ring as any).activeRings.get(currentWindowId);
+      const framePayload = {
+        w: currentWindowId,
+        s: "LIVE_FAILOVER",
+        p: {},
+        t: "NaN-timestamp", // Not a valid safe integer
+      };
+      const serialized = JSON.stringify(framePayload);
+      const signature = crypto.sign(
+        null,
+        Buffer.from(serialized),
+        ringCtx.opPrivateKey,
+      );
+      const packet = {
+        senderDid: "did:ctube:node-3",
+        windowId: currentWindowId,
+        frame: serialized,
+        signature: signature.toString("hex"),
+      };
+
+      const mockCol = { updateOne: vi.fn() };
+      (ring as any).db = mockCol;
+
+      await ring.handleIncomingSignal(packet);
+      // t is NaN, so it should be rejected and not trigger updateOne
+      expect(mockCol.updateOne).not.toHaveBeenCalled();
     });
   });
 });

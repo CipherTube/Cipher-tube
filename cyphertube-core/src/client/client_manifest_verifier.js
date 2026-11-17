@@ -30,7 +30,9 @@ export class ClientManifestVerifier {
             format: "raw",
             type: "public",
           });
-        } catch (e) {}
+        } catch {
+          // empty
+        }
       }
       try {
         return crypto.createPublicKey({
@@ -38,7 +40,9 @@ export class ClientManifestVerifier {
           format: "der",
           type: "spki",
         });
-      } catch (e) {}
+      } catch {
+        // empty
+      }
     }
     return pubKey;
   }
@@ -48,6 +52,9 @@ export class ClientManifestVerifier {
   }
 
   ingestRevocationTicket(ticket) {
+    if (!ticket || typeof ticket !== 'object' || Array.isArray(ticket)) {
+      throw new Error("REVOCATION_VERIFY_ERR: Invalid ticket format.");
+    }
     const {
       revocation_target,
       revocation_epoch,
@@ -55,6 +62,18 @@ export class ClientManifestVerifier {
       issuer_node_did,
       revocation_signature,
     } = ticket;
+
+    if (
+      typeof revocation_target !== "string" ||
+      typeof reason_code !== "string" ||
+      typeof issuer_node_did !== "string" ||
+      typeof revocation_signature !== "string" ||
+      typeof revocation_epoch !== "number" ||
+      !Number.isSafeInteger(revocation_epoch)
+    ) {
+      throw new Error("REVOCATION_VERIFY_ERR: Invalid ticket fields.");
+    }
+
     const kNodePubKey = this.trustedNodes.get(issuer_node_did);
     if (!kNodePubKey)
       throw new Error("REVOCATION_VERIFY_ERR: Origin node unknown.");
