@@ -102,3 +102,119 @@ describe('Encrypted Vault Indexer (vault_core)', () => {
         }).toThrow('Input must be a Buffer.');
     });
 });
+
+describe('Encrypted Vault Indexer Manifest Hardening and Sanitization', () => {
+    const masterKey = crypto.randomBytes(32);
+
+    it('should throw error when decrypted manifest JSON is not an array', () => {
+        const indexIv = crypto.randomBytes(12);
+        const indexCipher = crypto.createCipheriv('aes-256-gcm', masterKey, indexIv);
+        const manifestBuf = Buffer.from('{"filePath": "config/session_keys.dat"}', 'utf8');
+        const encryptedIndex = Buffer.concat([indexCipher.update(manifestBuf), indexCipher.final()]);
+        const indexTag = indexCipher.getAuthTag();
+
+        const totalBufferLength = VaultIndexer.MAGIC.length + 12 + 16 + 4 + encryptedIndex.length;
+        const vaultBuffer = Buffer.allocUnsafe(totalBufferLength);
+        let writeOffset = 0;
+
+        vaultBuffer.set(VaultIndexer.MAGIC, writeOffset);
+        writeOffset += VaultIndexer.MAGIC.length;
+
+        vaultBuffer.set(indexIv, writeOffset);
+        writeOffset += 12;
+
+        vaultBuffer.set(indexTag, writeOffset);
+        writeOffset += 16;
+
+        vaultBuffer.writeUInt32BE(encryptedIndex.length, writeOffset);
+        writeOffset += 4;
+
+        vaultBuffer.set(encryptedIndex, writeOffset);
+
+        expect(() => {
+            VaultIndexer.selectiveUnpack(vaultBuffer, 'config/session_keys.dat', masterKey);
+        }).toThrow('Invalid vault index structure: Manifest must be an array.');
+    });
+
+    it('should throw error when found entry contains malformed property types or missing fields', () => {
+        const invalidManifests = [
+            // missing categoryTag
+            JSON.stringify([{ filePath: 'config/session_keys.dat', byteOffset: 0, fileSize: 10, iv: 'abc', tag: 'def' }]),
+            // iv is not a string
+            JSON.stringify([{ filePath: 'config/session_keys.dat', categoryTag: 'sec', byteOffset: 0, fileSize: 10, iv: 123, tag: 'def' }]),
+            // byteOffset is negative
+            JSON.stringify([{ filePath: 'config/session_keys.dat', categoryTag: 'sec', byteOffset: -1, fileSize: 10, iv: 'abc', tag: 'def' }]),
+            // fileSize is a float
+            JSON.stringify([{ filePath: 'config/session_keys.dat', categoryTag: 'sec', byteOffset: 0, fileSize: 1.5, iv: 'abc', tag: 'def' }]),
+            // byteOffset overflows
+            JSON.stringify([{ filePath: 'config/session_keys.dat', categoryTag: 'sec', byteOffset: Number.MAX_SAFE_INTEGER + 1, fileSize: 10, iv: 'abc', tag: 'def' }])
+        ];
+
+        for (const badManifest of invalidManifests) {
+            const indexIv = crypto.randomBytes(12);
+            const indexCipher = crypto.createCipheriv('aes-256-gcm', masterKey, indexIv);
+            const manifestBuf = Buffer.from(badManifest, 'utf8');
+            const encryptedIndex = Buffer.concat([indexCipher.update(manifestBuf), indexCipher.final()]);
+            const indexTag = indexCipher.getAuthTag();
+
+            const totalBufferLength = VaultIndexer.MAGIC.length + 12 + 16 + 4 + encryptedIndex.length;
+            const vaultBuffer = Buffer.allocUnsafe(totalBufferLength);
+            let writeOffset = 0;
+
+            vaultBuffer.set(VaultIndexer.MAGIC, writeOffset);
+            writeOffset += VaultIndexer.MAGIC.length;
+
+            vaultBuffer.set(indexIv, writeOffset);
+            writeOffset += 12;
+
+            vaultBuffer.set(indexTag, writeOffset);
+            writeOffset += 16;
+
+            vaultBuffer.writeUInt32BE(encryptedIndex.length, writeOffset);
+            writeOffset += 4;
+
+            vaultBuffer.set(encryptedIndex, writeOffset);
+
+            expect(() => {
+                VaultIndexer.selectiveUnpack(vaultBuffer, 'config/session_keys.dat', masterKey);
+            }).toThrow('Invalid entry structure in vault manifest.');
+        }
+    });
+
+    it('should handle manifest array containing null or non-object values gracefully', () => {
+        const manifestWithNull = JSON.stringify([null, { filePath: 'config/session_keys.dat', categoryTag: 'sec', byteOffset: 0, fileSize: 10, iv: 'abc', tag: 'def' }]);
+        const indexIv = crypto.randomBytes(12);
+        const indexCipher = crypto.createCipheriv('aes-256-gcm', masterKey, indexIv);
+        const manifestBuf = Buffer.from(manifestWithNull, 'utf8');
+        const encryptedIndex = Buffer.concat([indexCipher.update(manifestBuf), indexCipher.final()]);
+        const indexTag = indexCipher.getAuthTag();
+
+        const totalBufferLength = VaultIndexer.MAGIC.length + 12 + 16 + 4 + encryptedIndex.length + 20;
+        const vaultBuffer = Buffer.allocUnsafe(totalBufferLength);
+        let writeOffset = 0;
+
+        vaultBuffer.set(VaultIndexer.MAGIC, writeOffset);
+        writeOffset += VaultIndexer.MAGIC.length;
+
+        vaultBuffer.set(indexIv, writeOffset);
+        writeOffset += 12;
+
+        vaultBuffer.set(indexTag, writeOffset);
+        writeOffset += 16;
+
+        vaultBuffer.writeUInt32BE(encryptedIndex.length, writeOffset);
+        writeOffset += 4;
+
+        vaultBuffer.set(encryptedIndex, writeOffset);
+        writeOffset += encryptedIndex.length;
+
+        // Fill payload region to satisfy length checks
+        vaultBuffer.fill(0, writeOffset);
+
+        // Should successfully skip null and find the valid entry, then fail decryption because of dummy iv/tag,
+        // but it should NOT crash on type error when traversing.
+        expect(() => {
+            VaultIndexer.selectiveUnpack(vaultBuffer, 'config/session_keys.dat', masterKey);
+        }).toThrow(/decryption failed|Selective decryption failed/);
+    });
+});

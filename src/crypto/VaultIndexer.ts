@@ -211,14 +211,48 @@ export class VaultIndexer {
             throw new Error('Invalid vault index structure: JSON parse error.');
         }
 
+        // Sentinel: Verify decrypted manifest is a valid array of non-null objects to prevent type confusion / DoS
+        if (!Array.isArray(manifest)) {
+            throw new Error('Invalid vault index structure: Manifest must be an array.');
+        }
+
         // 6. Search for target file path in manifest
-        const entry = manifest.find((item) => item.filePath === filePath);
+        const entry = manifest.find((item) => {
+            if (!item || typeof item !== 'object' || Array.isArray(item)) {
+                return false;
+            }
+            return item.filePath === filePath;
+        });
         if (!entry) {
             throw new Error(`File not found in vault manifest: ${filePath}`);
         }
 
+        // Sentinel: Strictly validate the found entry properties to prevent type confusion, DoS, and unhandled exceptions
+        if (
+            typeof entry.filePath !== 'string' ||
+            typeof entry.categoryTag !== 'string' ||
+            typeof entry.iv !== 'string' ||
+            typeof entry.tag !== 'string' ||
+            typeof entry.byteOffset !== 'number' ||
+            typeof entry.fileSize !== 'number' ||
+            !Number.isSafeInteger(entry.byteOffset) ||
+            !Number.isSafeInteger(entry.fileSize) ||
+            entry.byteOffset < 0 ||
+            entry.fileSize < 0
+        ) {
+            throw new Error('Invalid entry structure in vault manifest.');
+        }
+
+        // Sentinel: Ensure addition of offsets does not overflow
+        if (!SafeMath.checkAdditionOverflow(payloadRegionStartOffset, entry.byteOffset, this.MAX_VAULT_SIZE)) {
+            throw new Error('Invalid vault format: Offset overflow.');
+        }
         // 7. Selective extraction and decryption
         const fileStartOffset = payloadRegionStartOffset + entry.byteOffset;
+
+        if (!SafeMath.checkAdditionOverflow(fileStartOffset, entry.fileSize, this.MAX_VAULT_SIZE)) {
+            throw new Error('Invalid vault format: Size overflow.');
+        }
         const fileEndOffset = fileStartOffset + entry.fileSize;
 
         if (vaultBuffer.length < fileEndOffset) {

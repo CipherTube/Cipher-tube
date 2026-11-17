@@ -33,6 +33,11 @@
 **Learning:** Using cryptographic APIs introduced in newer Node.js versions (e.g., `crypto.hash` in v21.7.0+) when the project declares support for older LTS versions (v20.x) creates a silent failure point that crashes the entire crypto pipeline at runtime.
 **Prevention:** Strictly adhere to standard `crypto.createHash` patterns for maximum compatibility across supported LTS versions, and verify API availability against the lowest supported version defined in `package.json`.
 
+## 2026-07-06 - Safe Traverse and Manifest Array Validation in Vault Indexes
+**Vulnerability:** Service-wide crash and Denial of Service (DoS) during selective unpacking of AES-GCM encrypted vaults.
+**Learning:** Parsing user-controlled, decrypted JSON indexes can result in array-specific operations (like `.find`) being called on objects or null values, raising unhandled `TypeError` exceptions. Additionally, traversing entries without object-type verification can crash the unpacker, and missing safe integer math/boundary limits on offset/size combinations can permit heap memory out-of-bound errors.
+**Prevention:** Always use `Array.isArray()` to verify manifest structures post-decryption, sanitize elements during iteration by skipping null/primitive entries, and strictly type-check found entry properties before using them. Ensure that all offsets and sizes are safe non-negative integers verified with `SafeMath` overflow checks before slicing buffer segments.
+
 ## 2026-05-30 - Middleware Order for Rate-Limited Security Headers
 **Vulnerability:** Security headers (XFO, HSTS) missing on 429 "Too Many Requests" responses.
 **Learning:** Applying rate limiters before security middleware (like `helmet`) causes blocked requests to return without protection. However, applying CSP/nonce generation before the limiter exposes the server to entropy exhaustion DoS.
