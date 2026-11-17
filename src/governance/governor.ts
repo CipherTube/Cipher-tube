@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import crypto from 'crypto';
 
 export class LedgerConsensusGovernor {
@@ -6,6 +7,21 @@ export class LedgerConsensusGovernor {
    * Requires 3/5 Sovereign Node Multi-Sig Approval as per merge policy.
    */
   static async verifyTransition(transition: any, signatures: string[]) {
+    if (!transition || typeof transition !== 'object' || Array.isArray(transition)) {
+      throw new Error("LedgerConsensus: Invalid transition. Must be a non-null object.");
+    }
+    if (typeof transition.id !== 'string' || transition.id.trim() === '') {
+      throw new Error("LedgerConsensus: Invalid transition ID.");
+    }
+    if (!signatures || !Array.isArray(signatures)) {
+      throw new Error("LedgerConsensus: Signatures must be an array of strings.");
+    }
+    for (const sig of signatures) {
+      if (typeof sig !== 'string') {
+        throw new Error("LedgerConsensus: All signatures must be strings.");
+      }
+    }
+
     console.log(`[LedgerConsensus] Verifying transition: ${transition.id}`);
     if (signatures.length < 3) {
       throw new Error("LedgerConsensus: Insufficient signatures for state transition (requires 3/5)");
@@ -27,6 +43,13 @@ export class CipherTubeGovernanceGovernor {
    * All future feature additions must originate via a GovernanceProposal.
    */
   static async submitProposal(proposal: any) {
+    if (!proposal || typeof proposal !== 'object' || Array.isArray(proposal)) {
+      throw new Error("Governance: Invalid proposal. Must be a non-null object.");
+    }
+    if (typeof proposal.title !== 'string' || proposal.title.trim() === '') {
+      throw new Error("Governance: Proposal must have a valid non-empty title.");
+    }
+
     console.log(`[Governance] Submitting proposal: ${proposal.title}`);
     const id = crypto.randomBytes(4).toString('hex');
     const newProposal = { ...proposal, id, status: 'PENDING_CONSENSUS', createdAt: new Date().toISOString() };
@@ -39,6 +62,9 @@ export class CipherTubeGovernanceGovernor {
   }
 
   static async enforce(proposalId: string) {
+      if (typeof proposalId !== 'string' || proposalId.trim() === '') {
+        throw new Error("Governance: Invalid proposal ID.");
+      }
       const proposal = this.proposals.find(p => p.id === proposalId);
       if (!proposal) throw new Error("Proposal not found");
 
@@ -50,7 +76,20 @@ export class CipherTubeGovernanceGovernor {
 
 // Action stubs for integration into the Predator engine
 export const governance = {
-  submit: async (params: any) => await CipherTubeGovernanceGovernor.submitProposal(params),
-  enforce: async (params: any) => await CipherTubeGovernanceGovernor.enforce(params.id),
-  verify_ledger: async (params: any) => await LedgerConsensusGovernor.verifyTransition(params.transition, params.signatures)
+  submit: async (params: any) => {
+    if (!params) throw new Error("Governance: Missing parameters for submit.");
+    return await CipherTubeGovernanceGovernor.submitProposal(params);
+  },
+  enforce: async (params: any) => {
+    if (!params || typeof params.id !== 'string') {
+      throw new Error("Governance: Missing or invalid proposal ID for enforce.");
+    }
+    return await CipherTubeGovernanceGovernor.enforce(params.id);
+  },
+  verify_ledger: async (params: any) => {
+    if (!params) {
+      throw new Error("LedgerConsensus: Missing parameters for verify_ledger.");
+    }
+    return await LedgerConsensusGovernor.verifyTransition(params.transition, params.signatures);
+  }
 };
