@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+
 try:
     from .adb_verifier_wrapper import AdbVerifierWrapper
 except ImportError:
@@ -12,6 +13,7 @@ try:
     from .audit_logger import CipherTubeAuditLogger
 except ImportError:
     from audit_logger import CipherTubeAuditLogger
+
 
 class CipherTubeDiagnosticRunner:
     def __init__(self, asset_id: str = "diagnostic-806"):
@@ -29,20 +31,21 @@ class CipherTubeDiagnosticRunner:
 
         simulator = JumbfSimulator(asset_id=self.asset_id, payload_data=payload_bytes)
         verification_payload = simulator.build_verification_payload()
-        
+
         self.audit_logger.log_event(
             asset_id=self.asset_id,
             status="SUCCESS",
             tamper_detected=False,
-            details={"deviceBridgeActive": len(pulled_files) > 0}
+            details={"deviceBridgeActive": len(pulled_files) > 0},
         )
 
         return {
             "status": "SUCCESS",
             "timestamp": datetime.utcnow().isoformat(),
             "assetId": self.asset_id,
-            "verificationPayload": verification_payload
+            "verificationPayload": verification_payload,
         }
+
 
 if __name__ == "__main__":
     runner = CipherTubeDiagnosticRunner()

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+
 try:
     from .adb_verifier_wrapper import AdbVerifierWrapper
 except ImportError:
@@ -13,6 +13,7 @@ try:
 except ImportError:
     from audit_logger import CipherTubeAuditLogger
 
+
 class CrossPlatformSimulatorRunner:
     def __init__(self, asset_id: str = "cross-platform-806"):
         self.asset_id = asset_id
@@ -21,7 +22,9 @@ class CrossPlatformSimulatorRunner:
 
     def execute_pipeline(self):
         device_active = self.adb_wrapper.check_connection()
-        pulled_artifacts = self.adb_wrapper.scan_and_pull_artifacts() if device_active else []
+        pulled_artifacts = (
+            self.adb_wrapper.scan_and_pull_artifacts() if device_active else []
+        )
         payload_data = b"Cipher-Tube Mobile Integration Stream Payload"
 
         simulator = JumbfSimulator(asset_id=self.asset_id, payload_data=payload_data)
@@ -31,10 +34,14 @@ class CrossPlatformSimulatorRunner:
             asset_id=self.asset_id,
             status="SUCCESS",
             tamper_detected=False,
-            details={"mobileDeviceConnected": device_active, "artifactsPulledCount": len(pulled_artifacts)}
+            details={
+                "mobileDeviceConnected": device_active,
+                "artifactsPulledCount": len(pulled_artifacts),
+            },
         )
 
         print(json.dumps(audit_event, indent=2))
+
 
 if __name__ == "__main__":
     runner = CrossPlatformSimulatorRunner()
