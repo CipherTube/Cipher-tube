@@ -81,10 +81,11 @@ export async function verifyCryptographicProof(rawProof: string, expectedHash?: 
         // Execute a constant-time comparison to prevent timing side-channel attacks
         return crypto.timingSafeEqual(challengeBuffer, computedBuffer);
 
-    } catch (error) {
+    } catch (error: any) {
         // Sentinel: Log only unexpected errors to prevent log flooding from malformed client input
         if (!(error instanceof SyntaxError)) {
-            console.error("Critical: Security framework evaluation failure inside verifier engine:", error);
+            const safeMessage = error instanceof Error ? error.message : String(error);
+            console.error("Critical: Security framework evaluation failure inside verifier engine:", safeMessage);
         }
         return false;
     }

@@ -65,9 +65,10 @@ export async function cipherTubeGateway(req: Request, res: Response, next: NextF
         (req as any).cipherState = safePayload;
         next();
 
-    } catch (err) {
+    } catch (err: any) {
         // Enforce fallback state containment
-        console.error("Gateway Processing Error:", err);
+        const safeMessage = err instanceof Error ? err.message : String(err);
+        console.error("Gateway Processing Error:", safeMessage);
         return res.status(500).json({
             status: "error",
             message: "Internal cryptographic channel fault."

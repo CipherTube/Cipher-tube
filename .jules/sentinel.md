@@ -1,3 +1,8 @@
+## 2026-08-09 - Sanitized Error Output in Core Transport & Caching
+**Vulnerability:** Raw error objects passed to logging mechanisms exposed connection metadata and potential stack traces.
+**Learning:** Redis driver and crypto verification errors can carry raw parameters or internal state within error properties.
+**Prevention:** Extract explicitly validated `.message` strings or map to generic operational errors before dispatching to console/log streams.
+
 ## 2026-04-17 - Sanitized Redis Error Logging
 **Vulnerability:** Potential credential leakage in logs via raw Redis error objects.
 **Learning:** Default error objects in some libraries (like Redis) can contain connection strings including passwords if the connection fails.
