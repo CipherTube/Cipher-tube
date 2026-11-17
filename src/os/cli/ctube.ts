@@ -6,7 +6,12 @@ async function main() {
     const args = process.argv.slice(2);
     const command = args[0];
     const persistence = new PersistenceLayer();
-    const key = process.env.CTUBE_KEY || 'default-sovereign-key';
+    const key = process.env.CTUBE_KEY;
+
+    if (!key) {
+        console.error('Critical Security Error: CTUBE_KEY environment variable is not set. Operation aborted.');
+        process.exit(1);
+    }
 
     switch (command) {
         case 'save':
