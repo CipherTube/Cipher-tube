@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cipher-Tube Sovereign OS // Multi-Agent Throughput Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            cyber: {
+              bg: '#05080f',
+              panel: '#0b111e',
+              card: '#0f1729',
+              border: '#1e2d4a',
+              cyan: '#06b6d4',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom scrollbar and subtle cyber grid styling */
+    body {
+      background-color: #05080f;
+      color: #e2e8f0;
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(6, 182, 212, 0.08), transparent 35%),
+        radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.07), transparent 35%),
+        linear-gradient(to right, rgba(30, 45, 74, 0.22) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 45, 74, 0.22) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+    }
+
+    /* Custom Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #162238;
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #06b6d4;
+      cursor: pointer;
+      border: 2px solid #05080f;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.7);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b111e;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e2d4a;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+
+    .glow-cyan {
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+    }
+    .glow-emerald {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- Top Navigation & System Status Header -->
+  <header class="sticky top-0 z-30 border-b border-cyber-border bg-cyber-panel/90 backdrop-blur-md">
+    <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/40 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">CIPHER-TUBE <span class="text-cyan-400">SOVEREIGN OS</span></h1>
+            <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              SI-AGENT-OPTIMUS SYNCED
+            </span>
+          </div>
+          <p class="text-xs font-mono text-slate-400">Zero-Trust Multi-Agent Throughput &amp; Fern SDK Telemetry Simulator</p>
+        </div>
+      </div>
+
+      <!-- Status Indicators & Fern Config Drawer Toggle -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <div id="sim-status-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyber-card border border-cyber-border text-xs font-mono">
+          <span id="sim-status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="sim-status-text" class="text-emerald-400 font-semibold">PIPELINE ACTIVE</span>
+        </div>
+
+        <button id="toggle-fern-drawer-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-semibold transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          <span>Fern Spec (api.yml)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification Banner (Replaces alert()) -->
+  <div id="toast-banner" class="fixed bottom-4 right-4 z-50 hidden transform transition-all duration-300">
+    <div class="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-cyber-card border border-cyan-500/50 shadow-2xl text-xs font-mono text-cyan-200">
+      <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+      <span id="toast-message">Copied to clipboard</span>
+    </div>
+  </div>
+
+  <!-- Main Workspace Container -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+
+    <!-- Top KPI Telemetry Strip -->
+    <section class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div class="p-3.5 rounded-2xl bg-cyber-panel/90 border border-cyber-border glow-emerald">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>200 OK THROUGHPUT</span>
+          <span class="text-emerald-400">LIVE</span>
+        </div>
+        <div class="mt-1 flex items-baseline gap-2">
+          <span id="kpi-ok-rate" class="text-xl sm:text-2xl font-mono font-bold text-emerald-400">0.0</span>
+          <span class="text-xs font-mono text-slate-500">req/s</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Success Ratio: <span id="kpi-success-pct" class="text-slate-200 font-semibold">100.0%</span>
+        </div>
+      </div>
+
+      <div class="p-3.5 rounded-2xl bg-cyber-panel/90 border border-cyber-border">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>429 THROTTLED / RETRY</span>
+          <span class="text-amber-400">BUCKET</span>
+        </div>
+        <div class="mt-1 flex items-baseline gap-2">
+          <span id="kpi-throttled-count" class="text-xl sm:text-2xl font-mono font-bold text-amber-400">0</span>
+          <span class="text-xs font-mono text-slate-500">pkts</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Tokens Avail: <span id="kpi-tokens-avail" class="text-cyan-300 font-semibold">20 / 20</span>
+        </div>
+      </div>
+
+      <div class="p-3.5 rounded-2xl bg-cyber-panel/90 border border-cyber-border">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>403 ZERO-TRUST BLOCK</span>
+          <span class="text-rose-400">GUARD</span>
+        </div>
+        <div class="mt-1 flex items-baseline gap-2">
+          <span id="kpi-blocked-count" class="text-xl sm:text-2xl font-mono font-bold text-rose-400">0</span>
+          <span class="text-xs font-mono text-slate-500">dropped</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Threat Mode: <span id="kpi-threat-state" class="text-emerald-400 font-semibold">NOMINAL</span>
+        </div>
+      </div>
+
+      <div class="p-3.5 rounded-2xl bg-cyber-panel/90 border border-cyber-border glow-cyan">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>REDIS ISOLATION POOL</span>
+          <span class="text-cyan-400">TTL 300s</span>
+        </div>
+        <div class="mt-1 flex items-baseline gap-2">
+          <span id="kpi-redis-sessions" class="text-xl sm:text-2xl font-mono font-bold text-cyan-400">12</span>
+          <span class="text-xs font-mono text-slate-500">active keys</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Memory Overhead: <span id="kpi-redis-mem" class="text-slate-200 font-semibold">1.4 MB</span>
+        </div>
+      </div>
+
+      <div class="col-span-2 lg:col-span-1 p-3.5 rounded-2xl bg-cyber-panel/90 border border-cyber-border">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>P95 DISPATCH LATENCY</span>
+          <span class="text-purple-400">SLA &lt;85ms</span>
+        </div>
+        <div class="mt-1 flex items-baseline gap-2">
+          <span id="kpi-p95-latency" class="text-xl sm:text-2xl font-mono font-bold text-slate-100">24</span>
+          <span class="text-xs font-mono text-slate-500">ms</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Active Workers: <span id="kpi-active-workers" class="text-cyan-300 font-semibold">4 / 4</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Primary Grid: Pipeline Canvas (Left/Center) + Controls & Fault Injection (Right) -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+
+      <!-- Interactive Architecture & Pipeline Canvas -->
+      <div class="xl:col-span-8 rounded-2xl bg-cyber-panel/95 border border-cyber-border flex flex-col overflow-hidden shadow-xl">
+        <div class="px-4 py-3 border-b border-cyber-border flex flex-wrap items-center justify-between gap-2 bg-cyber-card/50">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+            <h2 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-200">
+              Sovereign OS Architecture &amp; Live Packet Pipeline
+            </h2>
+          </div>
+
+          <!-- Status Color Legend -->
+          <div class="flex flex-wrap items-center gap-3 text-[11px] font-mono">
+            <span class="flex items-center gap-1.5 text-emerald-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>200 OK
+            </span>
+            <span class="flex items-center gap-1.5 text-amber-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>429 Throttled
+            </span>
+            <span class="flex items-center gap-1.5 text-rose-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>403 Blocked
+            </span>
+            <span class="flex items-center gap-1.5 text-cyan-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>Retry / Backoff
+            </span>
+          </div>
+        </div>
+
+        <!-- Responsive Canvas Container -->
+        <div id="pipeline-canvas-wrapper" class="relative w-full h-[380px] sm:h-[430px] bg-[#060a13]">
+          <canvas id="pipeline-canvas" class="block w-full h-full"></canvas>
+        </div>
+
+        <!-- Bottom Node Routing Summary Bar -->
+        <div class="px-4 py-2.5 border-t border-cyber-border bg-cyber-card/40 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
+          <div>
+            Dispatch Targets:
+            <span class="text-cyan-300">SI-Agent-Optimus</span> ·
+            <span class="text-emerald-300">TypeScript SDK</span> ·
+            <span class="text-purple-300">Python SDK</span> ·
+            <span class="text-amber-300">Android/ADB Bridge</span>
+          </div>
+          <div id="canvas-fps-readout" class="text-slate-500">60 FPS // DETERMINISTIC</div>
+        </div>
+      </div>
+
+      <!-- Live Controls & Fault Injection Panel -->
+      <div class="xl:col-span-4 rounded-2xl bg-cyber-panel/95 border border-cyber-border p-4 sm:p-5 flex flex-col justify-between space-y-5 shadow-xl">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between border-b border-cyber-border pb-3">
+            <h2 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-200">
+              Traffic &amp; Rate-Limiter Controls
+            </h2>
+            <span class="text-[11px] font-mono text-cyan-400">TOKEN BUCKET</span>
+          </div>
+
+          <!-- Slider 1: Incoming Traffic Load -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-traffic" class="text-slate-300">Incoming Traffic Load</label>
+              <span id="val-traffic" class="text-cyan-400 font-bold">14 req/s</span>
+            </div>
+            <input id="slider-traffic" type="range" min="1" max="60" value="14" class="w-full" />
+          </div>
+
+          <!-- Slider 2: Token Bucket Rate Limit -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-ratelimit" class="text-slate-300">Token Bucket Refill Rate</label>
+              <span id="val-ratelimit" class="text-emerald-400 font-bold">16 req/s</span>
+            </div>
+            <input id="slider-ratelimit" type="range" min="2" max="50" value="16" class="w-full" />
+          </div>
+
+          <!-- Slider 3: Burst Capacity -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-burst" class="text-slate-300">Token Bucket Burst Size</label>
+              <span id="val-burst" class="text-cyan-300 font-bold">20 tokens</span>
+            </div>
+            <input id="slider-burst" type="range" min="5" max="60" value="20" class="w-full" />
+          </div>
+
+          <!-- Slider 4: Concurrent Agent Workers -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-workers" class="text-slate-300">Concurrent Agent Workers</label>
+              <span id="val-workers" class="text-purple-400 font-bold">4 agents</span>
+            </div>
+            <input id="slider-workers" type="range" min="1" max="8" value="4" class="w-full" />
+          </div>
+
+          <!-- Slider 5: Network Latency / Jitter -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-latency" class="text-slate-300">Base Latency &amp; Jitter</label>
+              <span id="val-latency" class="text-amber-300 font-bold">22 ms</span>
+            </div>
+            <input id="slider-latency" type="range" min="5" max="200" value="22" class="w-full" />
+          </div>
+        </div>
+
+        <!-- Fault Injection & Recovery Actions -->
+        <div class="pt-3 border-t border-cyber-border space-y-2.5">
+          <div class="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+            Fault Injection &amp; Orchestration
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button id="btn-spike" class="p-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-mono font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
+              <span>⚡ Spike Traffic (45/s)</span>
+            </button>
+
+            <button id="btn-intrusion" class="p-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-xs font-mono font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
+              <span>🛡️ Zero-Trust Intrusion</span>
+            </button>
+
+            <button id="btn-backoff" class="p-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-semibold transition flex items-center justify-center gap-2 cursor-pointer">
+              <span>🔄 Backoff Recovery</span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-pause" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-mono font-semibold transition cursor-pointer">
+                Pause
+              </button>
+              <button id="btn-reset" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-mono font-semibold transition cursor-pointer">
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Grid: Real-Time Telemetry Sparkline Chart + Live Fern SDK JSON Event Log -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+      <!-- Real-Time Throughput vs Throttled Sparkline Chart -->
+      <div class="lg:col-span-6 rounded-2xl bg-cyber-panel/95 border border-cyber-border flex flex-col overflow-hidden shadow-xl">
+        <div class="px-4 py-3 border-b border-cyber-border flex items-center justify-between bg-cyber-card/50">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <h3 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-200">
+              Throughput vs. Throttled Telemetry (60s Window)
+            </h3>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] font-mono">
+            <span class="text-emerald-400">● 200 OK</span>
+            <span class="text-amber-400">● 429 Throttled</span>
+            <span class="text-rose-400">● 403 Blocked</span>
+          </div>
+        </div>
+
+        <div id="chart-canvas-wrapper" class="relative w-full h-[250px] bg-[#060a13] p-2">
+          <canvas id="telemetry-chart" class="block w-full h-full"></canvas>
+        </div>
+      </div>
+
+      <!-- Interactive Live JSON Event Log Inspector -->
+      <div class="lg:col-span-6 rounded-2xl bg-cyber-panel/95 border border-cyber-border flex flex-col overflow-hidden shadow-xl">
+        <div class="px-4 py-3 border-b border-cyber-border flex flex-wrap items-center justify-between gap-2 bg-cyber-card/50">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <h3 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-200">
+              Fern SDK Live JSON Event Inspector
+            </h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="log-filter-select" class="bg-cyber-bg border border-cyber-border rounded-lg px-2.5 py-1 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500">
+              <option value="ALL">ALL EVENTS</option>
+              <option value="200">200 OK ONLY</option>
+              <option value="429">429 THROTTLED</option>
+              <option value="403">403 BLOCKED</option>
+            </select>
+            <button id="btn-clear-logs" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-mono text-slate-300 cursor-pointer">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div id="event-log-container" class="h-[250px] overflow-y-auto p-3 space-y-2 font-mono text-xs bg-[#060a13]">
+          <!-- Live JSON cards injected here -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Slide-Over Fern Definition (api.yml & generators.yml) Quick-Copy Drawer -->
+  <div id="fern-drawer-backdrop" class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm hidden transition-opacity"></div>
+  <aside id="fern-drawer" class="fixed top-0 right-0 z-50 h-full w-full max-w-2xl bg-cyber-panel border-l border-cyber-border shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+    <div class="px-5 py-4 border-b border-cyber-border flex items-center justify-between bg-cyber-card">
+      <div>
+        <h2 class="text-sm sm:text-base font-mono font-bold text-white flex items-center gap-2">
+          <span class="text-cyan-400">fern/</span> Starter Definition &amp; SDK Config
+        </h2>
+        <p class="text-xs font-mono text-slate-400">Ready for ightevenmckane187/Cipher-tube workspace</p>
+      </div>
+      <button id="close-fern-drawer-btn" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Drawer Tabs -->
+    <div class="px-5 pt-3 border-b border-cyber-border flex items-center gap-2 bg-cyber-panel">
+      <button data-tab="api-yml" class="fern-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold bg-cyber-card text-cyan-400 border-t border-x border-cyber-border cursor-pointer">
+        definition/api.yml
+      </button>
+      <button data-tab="service-yml" class="fern-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold text-slate-400 hover:text-slate-200 cursor-pointer">
+        definition/sovereign.yml
+      </button>
+      <button data-tab="generators-yml" class="fern-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold text-slate-400 hover:text-slate-200 cursor-pointer">
+        generators.yml
+      </button>
+    </div>
+
+    <!-- Tab Content Area -->
+    <div class="flex-1 overflow-y-auto p-5 space-y-4 bg-[#060a13]">
+      <div class="flex items-center justify-between">
+        <span id="active-file-path" class="text-xs font-mono text-emerald-400">fern/definition/api.yml</span>
+        <button id="copy-fern-code-btn" class="px-3.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-semibold transition cursor-pointer">
+          Copy YAML
+        </button>
+      </div>
+
+      <pre id="fern-code-display" class="p-4 rounded-xl bg-cyber-panel border border-cyber-border text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed"></pre>
+
+      <div class="p-4 rounded-xl bg-cyber-card/60 border border-cyber-border space-y-2 text-xs font-mono">
+        <div class="text-cyan-400 font-semibold">CLI Verification &amp; Generation Commands:</div>
+        <div class="text-slate-300 bg-black/40 p-2.5 rounded-lg">
+          fern check &amp;&amp; fern generate --group local --local
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    /**
+     * Cipher-Tube Sovereign OS & Multi-Agent Throughput Simulator
+     * Deterministic simulation loop modeling:
+     * 1. Zero-Trust Auth Gate (drops malicious/unverified payloads as 403)
+     * 2. Token-Bucket Rate Limiter (refills at configured req/s up to burst capacity; emits 429 on exhaustion)
+     * 3. Exponential Backoff Retry Queue (re-injects throttled requests with jitter)
+     * 4. Redis Session Isolation Pool & Multi-Agent Worker Dispatch (SI-Agent-Optimus, TS SDK, Python SDK, Android/ADB)
+     */
+
+    // =========================================================================
+    // 1. STARTER FERN CONFIGURATION PAYLOADS (Quick-Copy Drawer)
+    // =========================================================================
+    const FERN_FILES = {
+      'api-yml': {
+        path: 'fern/definition/api.yml',
+        content: `name: cipher-tube-api
+error-discrimination:
+  strategy: status-code
+auth: BearerAuth
+auth-schemes:
+  BearerAuth:
+    scheme: bearer
+    token:
+      name: sovereignToken
+headers:
+  X-Zero-Trust-Signature:
+    type: string
+    docs: Cryptographic HMAC-SHA256 payload signature required by Zero-Trust Gate
+  X-Session-Isolation-Id:
+    type: optional<string>
+    docs: Redis session pool isolation identifier
+environments:
+  Production: https://api.cipher-tube.internal/v1
+  LocalSimulator: http://localhost:8080/v1
+default-environment: Production`
+      },
+      'service-yml': {
+        path: 'fern/definition/sovereign.yml',
+        content: `types:
+  AgentTarget:
+    enum:
+      - SI_AGENT_OPTIMUS
+      - TYPESCRIPT_SDK
+      - PYTHON_SDK
+      - ANDROID_ADB_BRIDGE
+
+  CipherEncryptRequest:
+    properties:
+      plaintextPayload: string
+      algorithm: optional<string>
+      ttlSeconds: optional<integer>
+
+  CipherEncryptResponse:
+    properties:
+      ciphertext: string
+      keyFingerprint: string
+      redisSessionKey: string
+
+  AgentDispatchRequest:
+    properties:
+      target: AgentTarget
+      taskDirective: string
+      priority: integer
+      idempotencyKey: string
+
+  AgentDispatchResponse:
+    properties:
+      dispatchId: string
+      status: string
+      latencyMs: double
+
+  SessionAuditResponse:
+    properties:
+      activeSessions: integer
+      zeroTrustBlockedCount: integer
+      bucketTokensRemaining: double
+
+service:
+  auth: true
+  base-path: /v1
+  endpoints:
+    encryptPayload:
+      method: POST
+      path: /cipher/encrypt
+      request: CipherEncryptRequest
+      response: CipherEncryptResponse
+    dispatchAgent:
+      method: POST
+      path: /agents/dispatch
+      request: AgentDispatchRequest
+      response: AgentDispatchResponse
+    auditSessions:
+      method: GET
+      path: /sessions/audit
+      response: SessionAuditResponse`
+      },
+      'generators-yml': {
+        path: 'fern/generators.yml',
+        content: `default-group: local
+groups:
+  local:
+    generators:
+      - name: fernapi/fern-typescript-node-sdk
+        version: 0.41.0
+        output:
+          location: local-file-system
+          path: ../sdks/typescript
+      - name: fernapi/fern-python-sdk
+        version: 4.3.0
+        output:
+          location: local-file-system
+          path: ../sdks/python`
+      }
+    };
+
+    // =========================================================================
+    // 2. SIMULATION STATE & PARAMETERS
+    // =========================================================================
+    const state = {
+      running: true,
+      trafficRate: 14,         // Incoming requests per second
+      bucketRefillRate: 16,    // Token bucket refill rate (req/s)
+      bucketCapacity: 20,      // Max burst tokens
+      tokens: 20,              // Current available tokens
+      workerCount: 4,          // Active agent dispatch targets
+      baseLatency: 22,         // Base latency in ms
+
+      // Fault injection flags & timers
+      intrusionTimer: 0,       // Seconds remaining of active Zero-Trust intrusion wave
+      backoffBoostTimer: 0,    // Seconds remaining of exponential backoff recovery mode
+
+      // Cumulative & rolling counters
+      totalOk: 0,
+      totalThrottled: 0,
+      totalBlocked: 0,
+      redisSessions: 12,
+      currentOkRate: 0,
+      p95Latency: 24,
+
+      // Rolling 1-second bucket accumulators
+      secOk: 0,
+      secThrottled: 0,
+      secBlocked: 0,
+      secTimer: 0,
+
+      // 60-second sparkline history
+      history: Array.from({ length: 60 }, () => ({ ok: 0, throttled: 0, blocked: 0 })),
+
+      // Visual packets flying across canvas
+      packets: [],
+      spawnAccumulator: 0,
+      retryQueue: [],
+
+      // Event logs
+      logs: [],
+      logFilter: 'ALL',
+      lastFrameTime: performance.now()
+    };
+
+    const ENDPOINTS = [
+      { method: 'POST', path: '/v1/cipher/encrypt', agent: 'SI-Agent-Optimus' },
+      { method: 'POST', path: '/v1/agents/dispatch', agent: 'TypeScript SDK' },
+      { method: 'POST', path: '/v1/agents/dispatch', agent: 'Python SDK' },
+      { method: 'GET',  path: '/v1/sessions/audit',  agent: 'Android/ADB Bridge' }
+    ];
+
+    // =========================================================================
+    // 3. UI BINDINGS & CONTROLS
+    // =========================================================================
+    const ui = {
+      sliderTraffic: document.getElementById('slider-traffic'),
+      sliderRateLimit: document.getElementById('slider-ratelimit'),
+      sliderBurst: document.getElementById('slider-burst'),
+      sliderWorkers: document.getElementById('slider-workers'),
+      sliderLatency: document.getElementById('slider-latency'),
+
+      valTraffic: document.getElementById('val-traffic'),
+      valRateLimit: document.getElementById('val-ratelimit'),
+      valBurst: document.getElementById('val-burst'),
+      valWorkers: document.getElementById('val-workers'),
+      valLatency: document.getElementById('val-latency'),
+
+      kpiOkRate: document.getElementById('kpi-ok-rate'),
+      kpiSuccessPct: document.getElementById('kpi-success-pct'),
+      kpiThrottled: document.getElementById('kpi-throttled-count'),
+      kpiTokensAvail: document.getElementById('kpi-tokens-avail'),
+      kpiBlocked: document.getElementById('kpi-blocked-count'),
+      kpiThreatState: document.getElementById('kpi-threat-state'),
+      kpiRedisSessions: document.getElementById('kpi-redis-sessions'),
+      kpiRedisMem: document.getElementById('kpi-redis-mem'),
+      kpiP95Latency: document.getElementById('kpi-p95-latency'),
+      kpiActiveWorkers: document.getElementById('kpi-active-workers'),
+
+      statusDot: document.getElementById('sim-status-dot'),
+      statusText: document.getElementById('sim-status-text'),
+
+      btnSpike: document.getElementById('btn-spike'),
+      btnIntrusion: document.getElementById('btn-intrusion'),
+      btnBackoff: document.getElementById('btn-backoff'),
+      btnPause: document.getElementById('btn-pause'),
+      btnReset: document.getElementById('btn-reset'),
+
+      logContainer: document.getElementById('event-log-container'),
+      logFilter: document.getElementById('log-filter-select'),
+      btnClearLogs: document.getElementById('btn-clear-logs'),
+
+      drawer: document.getElementById('fern-drawer'),
+      drawerBackdrop: document.getElementById('fern-drawer-backdrop'),
+      btnOpenDrawer: document.getElementById('toggle-fern-drawer-btn'),
+      btnCloseDrawer: document.getElementById('close-fern-drawer-btn'),
+      fernCodeDisplay: document.getElementById('fern-code-display'),
+      activeFilePath: document.getElementById('active-file-path'),
+      btnCopyFern: document.getElementById('copy-fern-code-btn'),
+
+      toastBanner: document.getElementById('toast-banner'),
+      toastMessage: document.getElementById('toast-message')
+    };
+
+    function showToast(msg) {
+      ui.toastMessage.textContent = msg;
+      ui.toastBanner.classList.remove('hidden');
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        ui.toastBanner.classList.add('hidden');
+      }, 2600);
+    }
+
+    function syncSlidersToState() {
+      state.trafficRate = Number(ui.sliderTraffic.value);
+      state.bucketRefillRate = Number(ui.sliderRateLimit.value);
+      state.bucketCapacity = Number(ui.sliderBurst.value);
+      state.workerCount = Number(ui.sliderWorkers.value);
+      state.baseLatency = Number(ui.sliderLatency.value);
+
+      if (state.tokens > state.bucketCapacity) {
+        state.tokens = state.bucketCapacity;
+      }
+
+      ui.valTraffic.textContent = `${state.trafficRate} req/s`;
+      ui.valRateLimit.textContent = `${state.bucketRefillRate} req/s`;
+      ui.valBurst.textContent = `${state.bucketCapacity} tokens`;
+      ui.valWorkers.textContent = `${state.workerCount} agents`;
+      ui.valLatency.textContent = `${state.baseLatency} ms`;
+      ui.kpiActiveWorkers.textContent = `${state.workerCount} / 8`;
+    }
+
+    [ui.sliderTraffic, ui.sliderRateLimit, ui.sliderBurst, ui.sliderWorkers, ui.sliderLatency].forEach(el => {
+      el.addEventListener('input', syncSlidersToState);
+    });
+
+    // Fault Injection Buttons
+    ui.btnSpike.addEventListener('click', () => {
+      ui.sliderTraffic.value = 45;
+      syncSlidersToState();
+      showToast('⚡ Traffic Spike Injected: 45 req/s incoming flood');
+    });
+
+    ui.btnIntrusion.addEventListener('click', () => {
+      state.intrusionTimer = 8.0;
+      showToast('🛡️ Zero-Trust Intrusion Wave Simulated (8s unsigned traffic)');
+    });
+
+    ui.btnBackoff.addEventListener('click', () => {
+      state.backoffBoostTimer = 10.0;
+      ui.sliderTraffic.value = Math.max(8, Math.floor(state.bucketRefillRate * 0.85));
+      syncSlidersToState();
+      showToast('🔄 Exponential Backoff Recovery Engaged: Pacing traffic & draining retry queue');
+    });
+
+    ui.btnPause.addEventListener('click', () => {
+      state.running = !state.running;
+      ui.btnPause.textContent = state.running ? 'Pause' : 'Resume';
+      if (state.running) {
+        state.lastFrameTime = performance.now();
+        ui.statusDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        ui.statusText.textContent = 'PIPELINE ACTIVE';
+        ui.statusText.className = 'text-emerald-400 font-semibold';
+      } else {
+        ui.statusDot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        ui.statusText.textContent = 'SIMULATION PAUSED';
+        ui.statusText.className = 'text-amber-400 font-semibold';
+      }
+    });
+
+    ui.btnReset.addEventListener('click', () => {
+      ui.sliderTraffic.value = 14;
+      ui.sliderRateLimit.value = 16;
+      ui.sliderBurst.value = 20;
+      ui.sliderWorkers.value = 4;
+      ui.sliderLatency.value = 22;
+      state.tokens = 20;
+      state.intrusionTimer = 0;
+      state.backoffBoostTimer = 0;
+      state.totalOk = 0;
+      state.totalThrottled = 0;
+      state.totalBlocked = 0;
+      state.redisSessions = 12;
+      state.packets = [];
+      state.retryQueue = [];
+      state.history = Array.from({ length: 60 }, () => ({ ok: 0, throttled: 0, blocked: 0 }));
+      state.logs = [];
+      renderLogs();
+      syncSlidersToState();
+      showToast('Simulator reset to baseline parameters');
+    });
+
+    // Fern Drawer Controls
+    let currentFernTab = 'api-yml';
+    function renderFernTab(tabKey) {
+      currentFernTab = tabKey;
+      const file = FERN_FILES[tabKey];
+      ui.activeFilePath.textContent = file.path;
+      ui.fernCodeDisplay.textContent = file.content;
+
+      document.querySelectorAll('.fern-tab-btn').forEach(btn => {
+        if (btn.dataset.tab === tabKey) {
+          btn.className = 'fern-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold bg-cyber-card text-cyan-400 border-t border-x border-cyber-border cursor-pointer';
+        } else {
+          btn.className = 'fern-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold text-slate-400 hover:text-slate-200 cursor-pointer';
+        }
+      });
+    }
+
+    ui.btnOpenDrawer.addEventListener('click', () => {
+      renderFernTab(currentFernTab);
+      ui.drawerBackdrop.classList.remove('hidden');
+      ui.drawer.classList.remove('translate-x-full');
+    });
+
+    function closeFernDrawer() {
+      ui.drawer.classList.add('translate-x-full');
+      ui.drawerBackdrop.classList.add('hidden');
+    }
+
+    ui.btnCloseDrawer.addEventListener('click', closeFernDrawer);
+    ui.drawerBackdrop.addEventListener('click', closeFernDrawer);
+
+    document.querySelectorAll('.fern-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => renderFernTab(btn.dataset.tab));
+    });
+
+    ui.btnCopyFern.addEventListener('click', () => {
+      const text = FERN_FILES[currentFernTab].content;
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(`Copied ${FERN_FILES[currentFernTab].path} to clipboard`);
+      } catch (err) {
+        showToast('Copy failed — select text manually');
+      }
+      document.body.removeChild(textarea);
+    });
+
+    // Event Logs Filtering & Clearing
+    ui.logFilter.addEventListener('change', (e) => {
+      state.logFilter = e.target.value;
+      renderLogs();
+    });
+
+    ui.btnClearLogs.addEventListener('click', () => {
+      state.logs = [];
+      renderLogs();
+    });
+
+    function pushEventLog(status, endpoint, latencyMs, isRetry = false) {
+      const traceId = 'ct_' + Math.random().toString(36).substring(2, 9);
+      const entry = {
+        id: traceId,
+        ts: new Date().toISOString().split('T')[1].replace('Z', ''),
+        status,
+        method: endpoint.method,
+        path: endpoint.path,
+        target: endpoint.agent,
+        latencyMs: Math.round(latencyMs),
+        retry: isRetry,
+        tokensLeft: state.tokens.toFixed(1)
+      };
+
+      state.logs.unshift(entry);
+      if (state.logs.length > 45) {
+        state.logs.pop();
+      }
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const filtered = state.logs.filter(item =>
+        state.logFilter === 'ALL' ? true : String(item.status) === state.logFilter
+      );
+
+      if (filtered.length === 0) {
+        ui.logContainer.innerHTML = `<div class="text-slate-500 text-center py-10">Awaiting matching Fern SDK telemetry frames...</div>`;
+        return;
+      }
+
+      ui.logContainer.innerHTML = filtered.slice(0, 20).map(item => {
+        let badgeClass = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+        let borderAccent = 'border-l-emerald-400';
+        if (item.status === 429) {
+          badgeClass = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+          borderAccent = 'border-l-amber-400';
+        } else if (item.status === 403) {
+          badgeClass = 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+          borderAccent = 'border-l-rose-400';
+        }
+
+        const retryTag = item.retry
+          ? `<span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px]">RETRY</span>`
+          : '';
+
+        return `
+          <div class="p-2.5 rounded-xl bg-cyber-panel/90 border border-cyber-border border-l-2 ${borderAccent} flex flex-col gap-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${badgeClass}">${item.status}</span>
+                <span class="text-cyan-300 font-semibold">${item.method} ${item.path}</span>
+                ${retryTag}
+              </div>
+              <span class="text-[10px] text-slate-500">${item.ts} · ${item.latencyMs}ms</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate">
+              {"traceId":"${item.id}","target":"${item.target}","tokensRemaining":${item.tokensLeft}}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 4. RESPONSIVE PIPELINE ARCHITECTURE CANVAS
+    // =========================================================================
+    const pipelineCanvas = document.getElementById('pipeline-canvas');
+    const pCtx = pipelineCanvas.getContext('2d');
+    const pipelineWrapper = document.getElementById('pipeline-canvas-wrapper');
+
+    const chartCanvas = document.getElementById('telemetry-chart');
+    const cCtx = chartCanvas.getContext('2d');
+    const chartWrapper = document.getElementById('chart-canvas-wrapper');
+
+    function resizeCanvases() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const pRect = pipelineWrapper.getBoundingClientRect();
+      pipelineCanvas.width = pRect.width * dpr;
+      pipelineCanvas.height = pRect.height * dpr;
+      pCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const cRect = chartWrapper.getBoundingClientRect();
+      chartCanvas.width = cRect.width * dpr;
+      chartCanvas.height = cRect.height * dpr;
+      cCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener('resize', resizeCanvases);
+
+    // Compute dynamic node coordinates based on current canvas width/height
+    function getPipelineNodes(w, h) {
+      const colX = [w * 0.11, w * 0.31, w * 0.52, w * 0.71, w * 0.89];
+      const midY = h * 0.5;
+
+      return {
+        ingress: { x: colX[0], y: midY, label: 'INGRESS', sub: 'SDK / CLI', color: '#38bdf8' },
+        zerotrust: { x: colX[1], y: midY, label: 'ZERO-TRUST', sub: 'HMAC Gate', color: state.intrusionTimer > 0 ? '#f43f5e' : '#10b981' },
+        ratelimiter: { x: colX[2], y: midY, label: 'TOKEN BUCKET', sub: `${Math.floor(state.tokens)}/${state.bucketCapacity} tkns`, color: '#f59e0b' },
+        redis: { x: colX[3], y: midY, label: 'REDIS POOL', sub: `${state.redisSessions} keys`, color: '#06b6d4' },
+        agents: [
+          { x: colX[4], y: h * 0.18, label: 'SI-OPTIMUS', sub: 'Orchestrator', color: '#10b981' },
+          { x: colX[4], y: h * 0.39, label: 'TS-NODE SDK', sub: 'fern-ts', color: '#06b6d4' },
+          { x: colX[4], y: h * 0.61, label: 'PYTHON SDK', sub: 'fern-py', color: '#a855f7' },
+          { x: colX[4], y: h * 0.82, label: 'ADB BRIDGE', sub: 'APK / Device', color: '#f59e0b' }
+        ]
+      };
+    }
+
+    function spawnRequestPacket(isRetry = false) {
+      const endpointIndex = Math.floor(Math.random() * ENDPOINTS.length);
+      const endpoint = ENDPOINTS[endpointIndex];
+
+      // Determine outcome at each stage
+      const isIntrusion = !isRetry && state.intrusionTimer > 0 && Math.random() < 0.62;
+      let outcome = '200';
+      if (isIntrusion) {
+        outcome = '403';
+      } else if (state.tokens >= 1) {
+        state.tokens -= 1;
+        outcome = '200';
+      } else {
+        outcome = '429';
+      }
+
+      const latencyJitter = (Math.random() - 0.3) * (state.baseLatency * 0.45);
+      const computedLatency = Math.max(6, state.baseLatency + latencyJitter + (outcome === '429' ? 18 : 0));
+
+      state.packets.push({
+        progress: 0,
+        speed: 0.72 + Math.random() * 0.25,
+        outcome,
+        isRetry,
+        endpointIndex,
+        endpoint,
+        latency: computedLatency,
+        logged: false
+      });
+    }
+
+    function updateSimulation(dt) {
+      if (!state.running) return;
+
+      // Decay fault timers
+      if (state.intrusionTimer > 0) state.intrusionTimer = Math.max(0, state.intrusionTimer - dt);
+      if (state.backoffBoostTimer > 0) state.backoffBoostTimer = Math.max(0, state.backoffBoostTimer - dt);
+
+      // Refill token bucket
+      state.tokens = Math.min(state.bucketCapacity, state.tokens + state.bucketRefillRate * dt);
+
+      // Process exponential backoff retry queue
+      for (let i = state.retryQueue.length - 1; i >= 0; i--) {
+        state.retryQueue[i].delay -= dt;
+        if (state.retryQueue[i].delay <= 0) {
+          state.retryQueue.splice(i, 1);
+          spawnRequestPacket(true);
+        }
+      }
+
+      // Spawn new incoming packets according to trafficRate
+      state.spawnAccumulator += state.trafficRate * dt;
+      while (state.spawnAccumulator >= 1) {
+        state.spawnAccumulator -= 1;
+        spawnRequestPacket(false);
+      }
+
+      // Advance visual packets along pipeline stages
+      for (let i = state.packets.length - 1; i >= 0; i--) {
+        const pkt = state.packets[i];
+        pkt.progress += pkt.speed * dt;
+
+        // Stage 1 -> 2 (Zero-Trust Gate drop point at progress ~ 0.28)
+        if (pkt.outcome === '403' && pkt.progress >= 0.28 && !pkt.logged) {
+          pkt.logged = true;
+          state.totalBlocked += 1;
+          state.secBlocked += 1;
+          pushEventLog(403, pkt.endpoint, pkt.latency, pkt.isRetry);
+        }
+        if (pkt.outcome === '403' && pkt.progress >= 0.36) {
+          state.packets.splice(i, 1);
+          continue;
+        }
+
+        // Stage 2 -> 3 (Token Bucket throttle point at progress ~ 0.52)
+        if (pkt.outcome === '429' && pkt.progress >= 0.52 && !pkt.logged) {
+          pkt.logged = true;
+          state.totalThrottled += 1;
+          state.secThrottled += 1;
+          pushEventLog(429, pkt.endpoint, pkt.latency, pkt.isRetry);
+
+          // Queue exponential backoff retry if backoff mode active or with 55% SDK auto-retry probability
+          if ((state.backoffBoostTimer > 0 || Math.random() < 0.55) && state.retryQueue.length < 40) {
+            const backoffDelay = state.backoffBoostTimer > 0 ? 0.6 + Math.random() * 0.5 : 1.1 + Math.random() * 1.2;
+            state.retryQueue.push({ delay: backoffDelay });
+          }
+        }
+        if (pkt.outcome === '429' && pkt.progress >= 0.62) {
+          state.packets.splice(i, 1);
+          continue;
+        }
+
+        // Stage 4 -> 5 (Complete successful dispatch at progress >= 1.0)
+        if (pkt.progress >= 1.0) {
+          if (!pkt.logged) {
+            pkt.logged = true;
+            state.totalOk += 1;
+            state.secOk += 1;
+            state.p95Latency = Math.round(state.p95Latency * 0.85 + pkt.latency * 0.15);
+            pushEventLog(200, pkt.endpoint, pkt.latency, pkt.isRetry);
+          }
+          state.packets.splice(i, 1);
+        }
+      }
+
+      // 1-Second Telemetry Rollup
+      state.secTimer += dt;
+      if (state.secTimer >= 1.0) {
+        state.currentOkRate = state.secOk;
+        state.history.push({
+          ok: state.secOk,
+          throttled: state.secThrottled,
+          blocked: state.secBlocked
+        });
+        if (state.history.length > 60) state.history.shift();
+
+        // Update simulated Redis active session pool proportional to throughput & workers
+        const targetSessions = Math.max(4, Math.round(state.secOk * 1.4 + state.workerCount * 2));
+        state.redisSessions = Math.round(state.redisSessions * 0.7 + targetSessions * 0.3);
+
+        state.secOk = 0;
+        state.secThrottled = 0;
+        state.secBlocked = 0;
+        state.secTimer = 0;
+      }
+
+      updateKPIReadouts();
+    }
+
+    function updateKPIReadouts() {
+      ui.kpiOkRate.textContent = state.currentOkRate.toFixed(1);
+
+      const totalCompleted = state.totalOk + state.totalThrottled + state.totalBlocked;
+      const successRatio = totalCompleted > 0 ? (state.totalOk / totalCompleted) * 100 : 100;
+      ui.kpiSuccessPct.textContent = `${successRatio.toFixed(1)}%`;
+
+      ui.kpiThrottled.textContent = state.totalThrottled;
+      ui.kpiTokensAvail.textContent = `${Math.floor(state.tokens)} / ${state.bucketCapacity}`;
+
+      ui.kpiBlocked.textContent = state.totalBlocked;
+      if (state.intrusionTimer > 0) {
+        ui.kpiThreatState.textContent = `INTRUSION (${state.intrusionTimer.toFixed(1)}s)`;
+        ui.kpiThreatState.className = 'text-rose-400 font-bold animate-pulse';
+      } else if (state.backoffBoostTimer > 0) {
+        ui.kpiThreatState.textContent = `BACKOFF RECOVERY`;
+        ui.kpiThreatState.className = 'text-cyan-400 font-semibold';
+      } else {
+        ui.kpiThreatState.textContent = 'NOMINAL';
+        ui.kpiThreatState.className = 'text-emerald-400 font-semibold';
+      }
+
+      ui.kpiRedisSessions.textContent = state.redisSessions;
+      ui.kpiRedisMem.textContent = `${(state.redisSessions * 0.12).toFixed(1)} MB`;
+      ui.kpiP95Latency.textContent = state.p95Latency;
+    }
+
+    // =========================================================================
+    // 5. CANVAS RENDERING (PIPELINE & SPARKLINE TELEMETRY)
+    // =========================================================================
+    function drawRoundedRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function renderPipelineCanvas() {
+      const rect = pipelineWrapper.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      pCtx.clearRect(0, 0, w, h);
+
+      const nodes = getPipelineNodes(w, h);
+      const spine = [nodes.ingress, nodes.zerotrust, nodes.ratelimiter, nodes.redis];
+
+      // Draw spine connections
+      pCtx.lineWidth = 2;
+      for (let i = 0; i < spine.length - 1; i++) {
+        const a = spine[i];
+        const b = spine[i + 1];
+        const grad = pCtx.createLinearGradient(a.x, a.y, b.x, b.y);
+        grad.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
+        grad.addColorStop(1, 'rgba(16, 185, 129, 0.35)');
+        pCtx.strokeStyle = grad;
+        pCtx.beginPath();
+        pCtx.moveTo(a.x, a.y);
+        pCtx.lineTo(b.x, b.y);
+        pCtx.stroke();
+      }
+
+      // Draw fan-out curves from Redis Pool to Multi-Agent targets
+      nodes.agents.forEach((agent, idx) => {
+        const isActiveWorker = idx < Math.ceil(state.workerCount / 2);
+        pCtx.strokeStyle = isActiveWorker ? 'rgba(6, 182, 212, 0.32)' : 'rgba(71, 85, 105, 0.2)';
+        pCtx.lineWidth = isActiveWorker ? 2 : 1;
+        pCtx.beginPath();
+        pCtx.moveTo(nodes.redis.x, nodes.redis.y);
+        const cpX = (nodes.redis.x + agent.x) * 0.5;
+        pCtx.bezierCurveTo(cpX, nodes.redis.y, cpX, agent.y, agent.x, agent.y);
+        pCtx.stroke();
+      });
+
+      // Draw flying data packets
+      state.packets.forEach(pkt => {
+        let px = 0;
+        let py = 0;
+
+        if (pkt.progress < 0.25) {
+          const t = pkt.progress / 0.25;
+          px = nodes.ingress.x + (nodes.zerotrust.x - nodes.ingress.x) * t;
+          py = nodes.ingress.y;
+        } else if (pkt.progress < 0.50) {
+          const t = (pkt.progress - 0.25) / 0.25;
+          px = nodes.zerotrust.x + (nodes.ratelimiter.x - nodes.zerotrust.x) * t;
+          py = nodes.zerotrust.y + (pkt.outcome === '403' ? t * 45 : 0);
+        } else if (pkt.progress < 0.75) {
+          const t = (pkt.progress - 0.50) / 0.25;
+          px = nodes.ratelimiter.x + (nodes.redis.x - nodes.ratelimiter.x) * t;
+          py = nodes.ratelimiter.y + (pkt.outcome === '429' ? -t * 48 : 0);
+        } else {
+          const t = (pkt.progress - 0.75) / 0.25;
+          const target = nodes.agents[pkt.endpointIndex % nodes.agents.length];
+          const cpX = (nodes.redis.x + target.x) * 0.5;
+          const invT = 1 - t;
+          px = invT * invT * invT * nodes.redis.x +
+               3 * invT * invT * t * cpX +
+               3 * invT * t * t * cpX +
+               t * t * t * target.x;
+          py = invT * invT * invT * nodes.redis.y +
+               3 * invT * invT * t * nodes.redis.y +
+               3 * invT * t * t * target.y +
+               t * t * t * target.y;
+        }
+
+        let color = '#10b981'; // 200 OK emerald
+        if (pkt.outcome === '403' && pkt.progress >= 0.25) color = '#f43f5e';
+        else if (pkt.outcome === '429' && pkt.progress >= 0.50) color = '#f59e0b';
+        else if (pkt.isRetry) color = '#06b6d4';
+
+        pCtx.save();
+        pCtx.fillStyle = color;
+        pCtx.shadowColor = color;
+        pCtx.shadowBlur = 10;
+        pCtx.beginPath();
+        pCtx.arc(px, py, pkt.isRetry ? 4.5 : 4, 0, Math.PI * 2);
+        pCtx.fill();
+        pCtx.restore();
+      });
+
+      // Helper to render a cyber node card
+      const boxW = Math.min(118, w * 0.165);
+      const boxH = 54;
+
+      function drawNodeCard(node, dimmed = false) {
+        const x = node.x - boxW / 2;
+        const y = node.y - boxH / 2;
+
+        pCtx.save();
+        pCtx.globalAlpha = dimmed ? 0.45 : 1;
+        pCtx.fillStyle = '#0f1729';
+        pCtx.strokeStyle = node.color;
+        pCtx.lineWidth = 1.5;
+        drawRoundedRect(pCtx, x, y, boxW, boxH, 10);
+        pCtx.fill();
+        pCtx.stroke();
+
+        // Top accent bar
+        pCtx.fillStyle = node.color;
+        pCtx.fillRect(x + 10, y, boxW - 20, 2.5);
+
+        pCtx.fillStyle = '#f8fafc';
+        pCtx.font = '700 10px "JetBrains Mono", monospace';
+        pCtx.textAlign = 'center';
+        pCtx.fillText(node.label, node.x, node.y - 3);
+
+        pCtx.fillStyle = '#94a3b8';
+        pCtx.font = '500 9.5px "JetBrains Mono", monospace';
+        pCtx.fillText(node.sub, node.x, node.y + 13);
+        pCtx.restore();
+      }
+
+      spine.forEach(n => drawNodeCard(n, false));
+      nodes.agents.forEach((a, idx) => {
+        const isActive = idx < Math.ceil(state.workerCount / 2);
+        drawNodeCard(a, !isActive);
+      });
+    }
+
+    function renderTelemetryChart() {
+      const rect = chartWrapper.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      cCtx.clearRect(0, 0, w, h);
+
+      const padL = 34;
+      const padR = 14;
+      const padT = 16;
+      const padB = 24;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      // Determine dynamic max Y scale
+      let maxVal = 20;
+      state.history.forEach(pt => {
+        maxVal = Math.max(maxVal, pt.ok + pt.throttled + pt.blocked + 5);
+      });
+
+      // Horizontal grid lines
+      cCtx.strokeStyle = 'rgba(30, 45, 74, 0.55)';
+      cCtx.lineWidth = 1;
+      cCtx.font = '10px "JetBrains Mono", monospace';
+      cCtx.fillStyle = '#64748b';
+      cCtx.textAlign = 'right';
+
+      for (let step = 0; step <= 4; step++) {
+        const val = Math.round((maxVal / 4) * step);
+        const y = padT + plotH - (plotH * (step / 4));
+        cCtx.beginPath();
+        cCtx.moveTo(padL, y);
+        cCtx.lineTo(w - padR, y);
+        cCtx.stroke();
+        cCtx.fillText(String(val), padL - 6, y + 3);
+      }
+
+      function drawSeries(key, strokeColor, fillColor) {
+        cCtx.save();
+        cCtx.beginPath();
+        state.history.forEach((pt, idx) => {
+          const x = padL + (plotW * (idx / (state.history.length - 1)));
+          const y = padT + plotH - (plotH * (pt[key] / maxVal));
+          if (idx === 0) cCtx.moveTo(x, y);
+          else cCtx.lineTo(x, y);
+        });
+        cCtx.strokeStyle = strokeColor;
+        cCtx.lineWidth = 2;
+        cCtx.stroke();
+
+        if (fillColor) {
+          cCtx.lineTo(padL + plotW, padT + plotH);
+          cCtx.lineTo(padL, padT + plotH);
+          cCtx.closePath();
+          cCtx.fillStyle = fillColor;
+          cCtx.fill();
+        }
+        cCtx.restore();
+      }
+
+      drawSeries('ok', '#10b981', 'rgba(16, 185, 129, 0.12)');
+      drawSeries('throttled', '#f59e0b', null);
+      drawSeries('blocked', '#f43f5e', null);
+    }
+
+    // =========================================================================
+    // 6. MAIN ANIMATION LOOP (Starts on window.onload)
+    // =========================================================================
+    function mainLoop(now) {
+      const dt = Math.min(0.05, (now - state.lastFrameTime) / 1000);
+      state.lastFrameTime = now;
+
+      updateSimulation(dt);
+      renderPipelineCanvas();
+      renderTelemetryChart();
+
+      requestAnimationFrame(mainLoop);
+    }
+
+    window.onload = function () {
+      resizeCanvases();
+      syncSlidersToState();
+      renderFernTab('api-yml');
+
+      // Seed initial telemetry logs so inspector is immediately informative
+      pushEventLog(200, ENDPOINTS[0], 21, false);
+      pushEventLog(200, ENDPOINTS[1], 24, false);
+
+      state.lastFrameTime = performance.now();
+      requestAnimationFrame(mainLoop);
+    };
+  </script>
+</body>
+</html>

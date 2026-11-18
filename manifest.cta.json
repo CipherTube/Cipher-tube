@@ -1,0 +1,31 @@
+{
+  "architecture": "CipherTube-Optimus-Hybrid-v1.1",
+  "frontEndRouter": {
+    "model": "microsoft/microsoft-decision-1.1",
+    "targetLatencyMs": 123,
+    "confidenceFloor": 0.72,
+    "highImpactEscalationThreshold": 0.4,
+    "multimodalMaxImages": 8
+  },
+  "orchestrator": {
+    "framework": "user:si-agent-optimus",
+    "rateLimitRps": 2,
+    "schemaValidation": "STRICT_JSON",
+    "hallucinationTolerance": 0.0
+  },
+  "boundSkillsAndGems": [
+    "user:si-agent-optimus",
+    "user:prep-for-meetings",
+    "user:get-more-perspectives",
+    "user:generate-fresh-ideas",
+    "user:focus-my-energy",
+    "user:match-my-writing-style",
+    "custom:domain-gems-pipeline"
+  ],
+  "cryptographicLayer": {
+    "protocol": "Cipher-Tube-Assembly-CC-BY-SA-4.0",
+    "cipher": "AES-256-GCM",
+    "keyDerivation": "HKDF-SHA256",
+    "sessionStore": "Redis-TLS-Isolated"
+  }
+}

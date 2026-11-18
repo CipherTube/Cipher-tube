@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CypherTube // Sovereign OS API Throughput &amp; Multi-Agent Stress-Test</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            void: '#04070d',
+            panel: '#0a101d',
+            card: '#0f172a',
+            edge: '#1e293b',
+            neon: {
+              cyan: '#06b6d4',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+              purple: '#a855f7'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #04070d;
+      color: #e2e8f0;
+      background-image:
+        radial-gradient(circle at 12% 10%, rgba(6, 182, 212, 0.09), transparent 36%),
+        radial-gradient(circle at 88% 85%, rgba(16, 185, 129, 0.07), transparent 36%),
+        linear-gradient(to right, rgba(30, 41, 59, 0.25) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(30, 41, 59, 0.25) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: #172236;
+      height: 6px;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #06b6d4;
+      cursor: pointer;
+      border: 2px solid #04070d;
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.8);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0a101d;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+
+  <!-- Top Header -->
+  <header class="sticky top-0 z-30 border-b border-edge bg-panel/90 backdrop-blur-md">
+    <div class="max-w-[1620px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border border-cyan-500/40 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">
+              CYPHERTUBE <span class="text-cyan-400">SOVEREIGN OS</span>
+            </h1>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-slate-800/90 text-cyan-300 border border-cyan-500/30">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+              ightevenmckane187/Cipher-tube
+            </span>
+          </div>
+          <p class="text-xs font-mono text-slate-400">API Throughput &amp; Multi-Agent Stress-Test Telemetry Harness</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <div id="live-status-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-card border border-edge text-xs font-mono">
+          <span id="live-status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="live-status-label" class="text-emerald-400 font-semibold">NORMAL OPS</span>
+        </div>
+
+        <button id="open-fern-modal-btn" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-xs font-mono font-semibold transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+          </svg>
+          <span>Fern Specs (api.yml)</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Banner (Replaces alert()) -->
+  <div id="toast-banner" class="fixed bottom-4 right-4 z-50 hidden">
+    <div class="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-card border border-cyan-500/50 shadow-2xl text-xs font-mono text-cyan-200">
+      <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+      <span id="toast-text">Copied to clipboard</span>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-[1620px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+
+    <!-- 5 Live Telemetry KPI Cards -->
+    <section class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div class="p-4 rounded-2xl bg-panel/95 border border-edge shadow-lg">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>EFFECTIVE THROUGHPUT</span>
+          <span class="text-emerald-400">200 OK</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span id="kpi-rps" class="text-2xl sm:text-3xl font-mono font-bold text-emerald-400">240</span>
+          <span class="text-xs font-mono text-slate-500">RPS</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Target Ingress: <span id="kpi-target-rps" class="text-slate-200 font-semibold">250 RPS</span>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-panel/95 border border-edge shadow-lg">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>P99 DISPATCH LATENCY</span>
+          <span class="text-cyan-400">SLA &lt;90ms</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span id="kpi-p99" class="text-2xl sm:text-3xl font-mono font-bold text-cyan-400">28</span>
+          <span class="text-xs font-mono text-slate-500">ms</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Jitter Envelope: <span id="kpi-jitter" class="text-slate-200 font-semibold">±12 ms</span>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-panel/95 border border-edge shadow-lg">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>BUCKET / RATE HITS</span>
+          <span class="text-amber-400">429 LIMIT</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span id="kpi-429" class="text-2xl sm:text-3xl font-mono font-bold text-amber-400">0</span>
+          <span class="text-xs font-mono text-slate-500">hits</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Tokens: <span id="kpi-tokens" class="text-cyan-300 font-semibold">400 / 400</span>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-panel/95 border border-edge shadow-lg">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>ZERO-TRUST BLOCKED</span>
+          <span class="text-rose-400">403 DROP</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span id="kpi-403" class="text-2xl sm:text-3xl font-mono font-bold text-rose-400">0</span>
+          <span class="text-xs font-mono text-slate-500">pkts</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Gate Posture: <span id="kpi-gate-posture" class="text-emerald-400 font-semibold">VERIFIED</span>
+        </div>
+      </div>
+
+      <div class="col-span-2 lg:col-span-1 p-4 rounded-2xl bg-panel/95 border border-edge shadow-lg">
+        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+          <span>ACTIVE WORKER NODES</span>
+          <span class="text-purple-400">REDIS POOL</span>
+        </div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span id="kpi-workers" class="text-2xl sm:text-3xl font-mono font-bold text-purple-400">8</span>
+          <span class="text-xs font-mono text-slate-500">/ 16 nodes</span>
+        </div>
+        <div class="mt-1 text-[11px] font-mono text-slate-400">
+          Encrypted Streams: <span id="kpi-encrypted" class="text-cyan-300 font-semibold">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Middle Grid: Canvas 2D Packet Flow Pipeline + Stress-Test & Fault Injection Controls -->
+    <section class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+
+      <!-- Canvas 2D Packet Flow Pipeline -->
+      <div class="xl:col-span-8 rounded-2xl bg-panel/95 border border-edge flex flex-col overflow-hidden shadow-xl">
+        <div class="px-4 py-3 border-b border-edge flex flex-wrap items-center justify-between gap-2 bg-card/60">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
+            <h2 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-100">
+              Sovereign OS Packet Flow Pipeline
+            </h2>
+          </div>
+
+          <!-- Packet Color Legend -->
+          <div class="flex flex-wrap items-center gap-3 text-[11px] font-mono">
+            <span class="flex items-center gap-1.5 text-emerald-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>200 OK
+            </span>
+            <span class="flex items-center gap-1.5 text-cyan-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>Encrypted Stream
+            </span>
+            <span class="flex items-center gap-1.5 text-amber-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>429 Throttled
+            </span>
+            <span class="flex items-center gap-1.5 text-rose-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>403 Zero-Trust Rejected
+            </span>
+          </div>
+        </div>
+
+        <div id="pipeline-wrapper" class="relative w-full h-[380px] sm:h-[435px] bg-[#050912]">
+          <canvas id="pipeline-canvas" class="block w-full h-full"></canvas>
+        </div>
+
+        <div class="px-4 py-2.5 border-t border-edge bg-card/40 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
+          <div>
+            Dispatch Targets:
+            <span class="text-emerald-300">SI-Agent-Optimus</span> ·
+            <span class="text-cyan-300">TypeScript SDK</span> ·
+            <span class="text-purple-300">Python SDK</span> ·
+            <span class="text-amber-300">Android ADB Bridge</span>
+          </div>
+          <div id="retry-queue-readout" class="text-cyan-400">Backoff Queue: 0 pkts</div>
+        </div>
+      </div>
+
+      <!-- Stress-Test & Fault Injection Controls -->
+      <div class="xl:col-span-4 rounded-2xl bg-panel/95 border border-edge p-4 sm:p-5 flex flex-col justify-between space-y-5 shadow-xl">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between border-b border-edge pb-3">
+            <h2 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-100">
+              Stress-Test &amp; Fault Controls
+            </h2>
+            <button id="btn-toggle-pause" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-[11px] font-mono text-slate-200 cursor-pointer">
+              Pause
+            </button>
+          </div>
+
+          <!-- Slider 1: Incoming Traffic RPS (10 - 2000) -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-rps" class="text-slate-300">Incoming Traffic RPS</label>
+              <span id="val-rps" class="text-cyan-400 font-bold">250 RPS</span>
+            </div>
+            <input id="slider-rps" type="range" min="10" max="2000" step="10" value="250" class="w-full" />
+          </div>
+
+          <!-- Slider 2: Token Bucket Refill Rate -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-refill" class="text-slate-300">Token Bucket Refill Rate</label>
+              <span id="val-refill" class="text-emerald-400 font-bold">320 /s</span>
+            </div>
+            <input id="slider-refill" type="range" min="20" max="2000" step="10" value="320" class="w-full" />
+          </div>
+
+          <!-- Slider 3: Burst Capacity -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-burst" class="text-slate-300">Burst Capacity</label>
+              <span id="val-burst" class="text-cyan-300 font-bold">400 tokens</span>
+            </div>
+            <input id="slider-burst" type="range" min="50" max="2500" step="25" value="400" class="w-full" />
+          </div>
+
+          <!-- Slider 4: Redis Isolation Workers -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-workers" class="text-slate-300">Redis Isolation Workers</label>
+              <span id="val-workers" class="text-purple-400 font-bold">8 nodes</span>
+            </div>
+            <input id="slider-workers" type="range" min="1" max="16" step="1" value="8" class="w-full" />
+          </div>
+
+          <!-- Slider 5: Network Jitter -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-mono">
+              <label for="slider-jitter" class="text-slate-300">Network Jitter</label>
+              <span id="val-jitter" class="text-amber-300 font-bold">12 ms</span>
+            </div>
+            <input id="slider-jitter" type="range" min="0" max="250" step="2" value="12" class="w-full" />
+          </div>
+        </div>
+
+        <!-- One-Click Preset Buttons -->
+        <div class="pt-3 border-t border-edge space-y-2.5">
+          <div class="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+            One-Click Scenario Presets
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <button id="preset-normal" class="p-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-semibold transition cursor-pointer">
+              Normal Ops
+            </button>
+
+            <button id="preset-ddos" class="p-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-xs font-mono font-semibold transition cursor-pointer">
+              DDoS / Burst Spike
+            </button>
+
+            <button id="preset-intrusion" class="p-3 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/40 text-rose-300 text-xs font-mono font-semibold transition cursor-pointer">
+              Zero-Trust Intrusion
+            </button>
+
+            <button id="preset-backoff" class="p-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-semibold transition cursor-pointer">
+              Exponential Backoff Recovery
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Grid: Rolling 60s Throughput Sparkline Chart & Filterable Fern SDK JSON Event Log Inspector -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+      <!-- Rolling 60s Throughput Sparkline Chart -->
+      <div class="lg:col-span-6 rounded-2xl bg-panel/95 border border-edge flex flex-col overflow-hidden shadow-xl">
+        <div class="px-4 py-3 border-b border-edge flex flex-wrap items-center justify-between gap-2 bg-card/60">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <h3 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-100">
+              Rolling 60s Throughput Sparkline
+            </h3>
+          </div>
+          <div class="flex items-center gap-3 text-[11px] font-mono">
+            <span class="text-emerald-400">● 200 OK</span>
+            <span class="text-amber-400">● 429 Limit</span>
+            <span class="text-rose-400">● 403 Block</span>
+          </div>
+        </div>
+
+        <div id="chart-wrapper" class="relative w-full h-[260px] bg-[#050912] p-2">
+          <canvas id="sparkline-canvas" class="block w-full h-full"></canvas>
+        </div>
+      </div>
+
+      <!-- Filterable Fern SDK JSON Event Log Inspector -->
+      <div class="lg:col-span-6 rounded-2xl bg-panel/95 border border-edge flex flex-col overflow-hidden shadow-xl">
+        <div class="px-4 py-3 border-b border-edge flex flex-wrap items-center justify-between gap-2 bg-card/60">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <h3 class="text-xs sm:text-sm font-mono font-bold uppercase tracking-wider text-slate-100">
+              Fern SDK JSON Event Log Inspector
+            </h3>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filter-endpoint" class="bg-void border border-edge rounded-lg px-2 py-1 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500">
+              <option value="ALL">ALL ENDPOINTS</option>
+              <option value="/v1/cipher/encrypt">/v1/cipher/encrypt</option>
+              <option value="/v1/agents/dispatch">/v1/agents/dispatch</option>
+              <option value="/v1/adb/telemetry">/v1/adb/telemetry</option>
+            </select>
+
+            <select id="filter-status" class="bg-void border border-edge rounded-lg px-2 py-1 text-[11px] font-mono text-slate-300 focus:outline-none focus:border-cyan-500">
+              <option value="ALL">ALL STATUS</option>
+              <option value="200">200 OK</option>
+              <option value="429">429 THROTTLED</option>
+              <option value="403">403 BLOCKED</option>
+            </select>
+
+            <button id="btn-clear-logs" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[11px] font-mono text-slate-300 cursor-pointer">
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div id="log-feed" class="h-[260px] overflow-y-auto p-3 space-y-2 font-mono text-xs bg-[#050912]">
+          <!-- JSON telemetry log cards injected dynamically -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Quick-Copy Modal for Fern api.yml & generators.yml Specs -->
+  <div id="fern-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+    <div class="w-full max-w-2xl rounded-2xl bg-panel border border-edge shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+      <div class="px-5 py-4 border-b border-edge flex items-center justify-between bg-card">
+        <div>
+          <h2 class="text-sm sm:text-base font-mono font-bold text-white">
+            Fern Workspace Specifications // <span class="text-cyan-400">Cipher-tube</span>
+          </h2>
+          <p class="text-xs font-mono text-slate-400">Generated definitions for TypeScript, Python &amp; ADB SDKs</p>
+        </div>
+        <button id="close-fern-modal-btn" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Spec Tabs -->
+      <div class="px-5 pt-3 border-b border-edge flex items-center gap-2 bg-panel">
+        <button data-spec="api" class="spec-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold bg-card text-cyan-400 border-t border-x border-edge cursor-pointer">
+          definition/api.yml
+        </button>
+        <button data-spec="generators" class="spec-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold text-slate-400 hover:text-slate-200 cursor-pointer">
+          generators.yml
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-4 bg-[#050912]">
+        <div class="flex items-center justify-between">
+          <span id="spec-filepath-label" class="text-xs font-mono text-emerald-400">fern/definition/api.yml</span>
+          <button id="copy-spec-btn" class="px-3.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-semibold transition cursor-pointer">
+            Copy to Clipboard
+          </button>
+        </div>
+
+        <pre id="spec-code-block" class="p-4 rounded-xl bg-panel border border-edge text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed"></pre>
+
+        <div class="p-3 rounded-xl bg-card/70 border border-edge text-xs font-mono text-slate-300 flex items-center justify-between">
+          <span>Compile locally: <code class="text-cyan-400">fern check &amp;&amp; fern generate --group local --local</code></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * CypherTube Sovereign OS API Throughput & Multi-Agent Stress-Test Engine
+     * Models high-throughput ingress (10 - 2,000 RPS), Zero-Trust HMAC gate filtering,
+     * Token-Bucket rate limiting with burst absorption, Redis isolation worker scaling,
+     * and exponential backoff retries across SI-Agent-Optimus, TypeScript SDK, Python SDK,
+     * and Android ADB Bridge.
+     */
+
+    // =========================================================================
+    // 1. FERN SPECIFICATION TEMPLATES
+    // =========================================================================
+    const FERN_SPECS = {
+      api: {
+        filepath: 'fern/definition/api.yml',
+        code: `name: cipher-tube
+error-discrimination:
+  strategy: status-code
+
+types:
+  SessionId: string
+  AgentTarget:
+    enum:
+      - SI_AGENT_OPTIMUS
+      - TYPESCRIPT_SDK
+      - PYTHON_SDK
+      - ANDROID_ADB_BRIDGE
+
+  CipherEncryptRequest:
+    properties:
+      data: string
+      algorithm: optional<string>
+      isolationTier: optional<integer>
+
+  AgentDispatchRequest:
+    properties:
+      target: AgentTarget
+      directive: string
+      idempotencyKey: string
+
+  AdbTelemetryPayload:
+    properties:
+      deviceSerial: string
+      batteryLevel: integer
+      logcatHash: string
+
+service:
+  auth: header
+  base-path: /v1
+  endpoints:
+    encryptStream:
+      path: /cipher/encrypt
+      method: POST
+      docs: Encrypts payloads through the Cipher Tube multi-layer pipeline.
+      request:
+        body: CipherEncryptRequest
+      response:
+        type: string
+
+    dispatchAgent:
+      path: /agents/dispatch
+      method: POST
+      docs: Dispatches multi-agent workflows under SI-Agent-Optimus governance.
+      request:
+        body: AgentDispatchRequest
+      response:
+        type: map<string, unknown>
+
+    ingestAdbTelemetry:
+      path: /adb/telemetry
+      method: POST
+      docs: Streams signed Android ADB device diagnostics into Redis isolation pools.
+      request:
+        body: AdbTelemetryPayload
+      response:
+        type: map<string, unknown>`
+      },
+      generators: {
+        filepath: 'fern/generators.yml',
+        code: `default-group: local
+groups:
+  local:
+    generators:
+      - name: fernapi/fern-typescript-node-sdk
+        version: 0.41.0
+        output:
+          location: local-file-system
+          path: ../sdks/typescript
+      - name: fernapi/fern-python-sdk
+        version: 4.3.0
+        output:
+          location: local-file-system
+          path: ../sdks/python`
+      }
+    };
+
+    // =========================================================================
+    // 2. SIMULATION STATE
+    // =========================================================================
+    const sim = {
+      running: true,
+      mode: 'NORMAL',          // 'NORMAL' | 'DDOS' | 'INTRUSION' | 'BACKOFF'
+      incomingRps: 250,        // 10 - 2000 RPS
+      refillRate: 320,         // tokens/sec
+      burstCapacity: 400,      // max tokens
+      tokens: 400,             // current bucket tokens
+      workers: 8,              // 1 - 16 Redis isolation workers
+      jitterMs: 12,            // 0 - 250 ms
+
+      // Fault & recovery state
+      intrusionActive: false,
+      backoffActive: false,
+      backoffQueue: 0,
+
+      // Telemetry counters
+      effectiveRps: 250,
+      p99Latency: 28,
+      total429: 0,
+      total403: 0,
+      totalEncrypted: 0,
+
+      // 1-second rolling accumulators
+      secOk: 0,
+      sec429: 0,
+      sec403: 0,
+      secTimer: 0,
+      logEmitTimer: 0,
+
+      // 60s sparkline history
+      history: Array.from({ length: 60 }, (_, i) => ({
+        ok: 230 + Math.round(Math.sin(i * 0.3) * 15),
+        throttled: 0,
+        blocked: 0
+      })),
+
+      // Visual packets (capped for 60fps smoothness even at 2000 RPS)
+      packets: [],
+      visualSpawnAcc: 0,
+
+      // Event logs
+      logs: [],
+      filterEndpoint: 'ALL',
+      filterStatus: 'ALL',
+      lastTime: performance.now()
+    };
+
+    const API_ROUTES = [
+      { path: '/v1/cipher/encrypt',  target: 'SI-Agent-Optimus',   encrypted: true,  agentIdx: 0 },
+      { path: '/v1/agents/dispatch', target: 'TypeScript SDK',     encrypted: false, agentIdx: 1 },
+      { path: '/v1/agents/dispatch', target: 'Python SDK',         encrypted: false, agentIdx: 2 },
+      { path: '/v1/adb/telemetry',   target: 'Android ADB Bridge', encrypted: true,  agentIdx: 3 }
+    ];
+
+    // =========================================================================
+    // 3. DOM REFERENCES & EVENT LISTENERS
+    // =========================================================================
+    const el = {
+      sliderRps: document.getElementById('slider-rps'),
+      sliderRefill: document.getElementById('slider-refill'),
+      sliderBurst: document.getElementById('slider-burst'),
+      sliderWorkers: document.getElementById('slider-workers'),
+      sliderJitter: document.getElementById('slider-jitter'),
+
+      valRps: document.getElementById('val-rps'),
+      valRefill: document.getElementById('val-refill'),
+      valBurst: document.getElementById('val-burst'),
+      valWorkers: document.getElementById('val-workers'),
+      valJitter: document.getElementById('val-jitter'),
+
+      kpiRps: document.getElementById('kpi-rps'),
+      kpiTargetRps: document.getElementById('kpi-target-rps'),
+      kpiP99: document.getElementById('kpi-p99'),
+      kpiJitter: document.getElementById('kpi-jitter'),
+      kpi429: document.getElementById('kpi-429'),
+      kpiTokens: document.getElementById('kpi-tokens'),
+      kpi403: document.getElementById('kpi-403'),
+      kpiGatePosture: document.getElementById('kpi-gate-posture'),
+      kpiWorkers: document.getElementById('kpi-workers'),
+      kpiEncrypted: document.getElementById('kpi-encrypted'),
+
+      statusDot: document.getElementById('live-status-dot'),
+      statusLabel: document.getElementById('live-status-label'),
+      retryReadout: document.getElementById('retry-queue-readout'),
+
+      presetNormal: document.getElementById('preset-normal'),
+      presetDdos: document.getElementById('preset-ddos'),
+      presetIntrusion: document.getElementById('preset-intrusion'),
+      presetBackoff: document.getElementById('preset-backoff'),
+      btnPause: document.getElementById('btn-toggle-pause'),
+
+      filterEndpoint: document.getElementById('filter-endpoint'),
+      filterStatus: document.getElementById('filter-status'),
+      btnClearLogs: document.getElementById('btn-clear-logs'),
+      logFeed: document.getElementById('log-feed'),
+
+      modal: document.getElementById('fern-modal'),
+      btnOpenModal: document.getElementById('open-fern-modal-btn'),
+      btnCloseModal: document.getElementById('close-fern-modal-btn'),
+      specCodeBlock: document.getElementById('spec-code-block'),
+      specFilepathLabel: document.getElementById('spec-filepath-label'),
+      btnCopySpec: document.getElementById('copy-spec-btn'),
+
+      toastBanner: document.getElementById('toast-banner'),
+      toastText: document.getElementById('toast-text')
+    };
+
+    function notifyToast(msg) {
+      el.toastText.textContent = msg;
+      el.toastBanner.classList.remove('hidden');
+      clearTimeout(notifyToast._t);
+      notifyToast._t = setTimeout(() => el.toastBanner.classList.add('hidden'), 2500);
+    }
+
+    function updateStatusBadge(label, colorClass, dotClass) {
+      el.statusLabel.textContent = label;
+      el.statusLabel.className = `${colorClass} font-semibold`;
+      el.statusDot.className = `w-2 h-2 rounded-full ${dotClass}`;
+    }
+
+    function syncControls() {
+      sim.incomingRps = Number(el.sliderRps.value);
+      sim.refillRate = Number(el.sliderRefill.value);
+      sim.burstCapacity = Number(el.sliderBurst.value);
+      sim.workers = Number(el.sliderWorkers.value);
+      sim.jitterMs = Number(el.sliderJitter.value);
+
+      if (sim.tokens > sim.burstCapacity) sim.tokens = sim.burstCapacity;
+
+      el.valRps.textContent = `${sim.incomingRps} RPS`;
+      el.valRefill.textContent = `${sim.refillRate} /s`;
+      el.valBurst.textContent = `${sim.burstCapacity} tokens`;
+      el.valWorkers.textContent = `${sim.workers} nodes`;
+      el.valJitter.textContent = `${sim.jitterMs} ms`;
+
+      el.kpiTargetRps.textContent = `${sim.incomingRps} RPS`;
+      el.kpiJitter.textContent = `±${sim.jitterMs} ms`;
+      el.kpiWorkers.textContent = `${sim.workers}`;
+    }
+
+    [el.sliderRps, el.sliderRefill, el.sliderBurst, el.sliderWorkers, el.sliderJitter].forEach(s => {
+      s.addEventListener('input', syncControls);
+    });
+
+    // Scenario Presets
+    el.presetNormal.addEventListener('click', () => {
+      sim.mode = 'NORMAL';
+      sim.intrusionActive = false;
+      sim.backoffActive = false;
+      el.sliderRps.value = 250;
+      el.sliderRefill.value = 320;
+      el.sliderBurst.value = 400;
+      el.sliderWorkers.value = 8;
+      el.sliderJitter.value = 12;
+      syncControls();
+      updateStatusBadge('NORMAL OPS', 'text-emerald-400', 'bg-emerald-400 animate-pulse');
+      notifyToast('Preset Applied: Normal Ops (250 RPS nominal)');
+    });
+
+    el.presetDdos.addEventListener('click', () => {
+      sim.mode = 'DDOS';
+      sim.intrusionActive = false;
+      sim.backoffActive = false;
+      el.sliderRps.value = 1850;
+      el.sliderRefill.value = 450;
+      el.sliderBurst.value = 300;
+      el.sliderWorkers.value = 12;
+      el.sliderJitter.value = 85;
+      syncControls();
+      updateStatusBadge('DDOS / BURST SPIKE', 'text-amber-400', 'bg-amber-400 animate-ping');
+      notifyToast('⚡ DDoS / Burst Spike Injected: 1,850 RPS flood!');
+    });
+
+    el.presetIntrusion.addEventListener('click', () => {
+      sim.mode = 'INTRUSION';
+      sim.intrusionActive = true;
+      sim.backoffActive = false;
+      el.sliderRps.value = 920;
+      el.sliderJitter.value = 44;
+      syncControls();
+      updateStatusBadge('ZERO-TRUST INTRUSION', 'text-rose-400', 'bg-rose-400 animate-ping');
+      notifyToast('🛡️ Zero-Trust Intrusion Active: Unsigned HMAC packets rejected (403)');
+    });
+
+    el.presetBackoff.addEventListener('click', () => {
+      sim.mode = 'BACKOFF';
+      sim.intrusionActive = false;
+      sim.backoffActive = true;
+      el.sliderRps.value = Math.min(2000, Math.round(sim.refillRate * 0.92));
+      el.sliderWorkers.value = 14;
+      el.sliderJitter.value = 18;
+      syncControls();
+      updateStatusBadge('BACKOFF RECOVERY', 'text-cyan-400', 'bg-cyan-400 animate-pulse');
+      notifyToast('🔄 Exponential Backoff Recovery: Pacing ingress & draining retry queue');
+    });
+
+    el.btnPause.addEventListener('click', () => {
+      sim.running = !sim.running;
+      el.btnPause.textContent = sim.running ? 'Pause' : 'Resume';
+      if (sim.running) sim.lastTime = performance.now();
+    });
+
+    // Modal Logic
+    let activeSpec = 'api';
+    function renderSpecModal(key) {
+      activeSpec = key;
+      el.specFilepathLabel.textContent = FERN_SPECS[key].filepath;
+      el.specCodeBlock.textContent = FERN_SPECS[key].code;
+      document.querySelectorAll('.spec-tab-btn').forEach(btn => {
+        if (btn.dataset.spec === key) {
+          btn.className = 'spec-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold bg-card text-cyan-400 border-t border-x border-edge cursor-pointer';
+        } else {
+          btn.className = 'spec-tab-btn px-3.5 py-2 rounded-t-xl text-xs font-mono font-semibold text-slate-400 hover:text-slate-200 cursor-pointer';
+        }
+      });
+    }
+
+    el.btnOpenModal.addEventListener('click', () => {
+      renderSpecModal(activeSpec);
+      el.modal.classList.remove('hidden');
+      el.modal.classList.add('flex');
+    });
+
+    el.btnCloseModal.addEventListener('click', () => {
+      el.modal.classList.add('hidden');
+      el.modal.classList.remove('flex');
+    });
+
+    el.modal.addEventListener('click', (e) => {
+      if (e.target === el.modal) {
+        el.modal.classList.add('hidden');
+        el.modal.classList.remove('flex');
+      }
+    });
+
+    document.querySelectorAll('.spec-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => renderSpecModal(btn.dataset.spec));
+    });
+
+    el.btnCopySpec.addEventListener('click', () => {
+      const ta = document.createElement('textarea');
+      ta.value = FERN_SPECS[activeSpec].code;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        notifyToast(`Copied ${FERN_SPECS[activeSpec].filepath} to clipboard`);
+      } catch (_) {
+        notifyToast('Copy unavailable — select text manually');
+      }
+      document.body.removeChild(ta);
+    });
+
+    // Event Log Filtering
+    el.filterEndpoint.addEventListener('change', (e) => {
+      sim.filterEndpoint = e.target.value;
+      renderEventLogs();
+    });
+    el.filterStatus.addEventListener('change', (e) => {
+      sim.filterStatus = e.target.value;
+      renderEventLogs();
+    });
+    el.btnClearLogs.addEventListener('click', () => {
+      sim.logs = [];
+      renderEventLogs();
+    });
+
+    function emitEventLog(status, route, latencyMs, isRetry) {
+      const traceId = 'ct_' + Math.random().toString(36).substring(2, 10);
+      const entry = {
+        traceId,
+        timestamp: new Date().toISOString().split('T')[1].replace('Z', ''),
+        status,
+        endpoint: route.path,
+        target: route.target,
+        encrypted: route.encrypted,
+        retry: isRetry,
+        latencyMs: Math.round(latencyMs),
+        workerPool: `redis-shard-${(Math.floor(Math.random() * sim.workers) + 1)}`
+      };
+
+      sim.logs.unshift(entry);
+      if (sim.logs.length > 60) sim.logs.pop();
+      renderEventLogs();
+    }
+
+    function renderEventLogs() {
+      const visible = sim.logs.filter(item => {
+        const epMatch = sim.filterEndpoint === 'ALL' || item.endpoint === sim.filterEndpoint;
+        const stMatch = sim.filterStatus === 'ALL' || String(item.status) === sim.filterStatus;
+        return epMatch && stMatch;
+      });
+
+      if (visible.length === 0) {
+        el.logFeed.innerHTML = `<div class="text-slate-500 text-center py-12">No matching Fern SDK events in buffer...</div>`;
+        return;
+      }
+
+      el.logFeed.innerHTML = visible.slice(0, 24).map(item => {
+        let badge = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+        let borderLeft = 'border-l-emerald-400';
+        if (item.status === 429) {
+          badge = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+          borderLeft = 'border-l-amber-400';
+        } else if (item.status === 403) {
+          badge = 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+          borderLeft = 'border-l-rose-400';
+        } else if (item.encrypted) {
+          borderLeft = 'border-l-cyan-400';
+        }
+
+        const encTag = item.encrypted
+          ? `<span class="px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 text-[10px]">AES-GCM</span>`
+          : '';
+        const retryTag = item.retry
+          ? `<span class="px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[10px]">BACKOFF-RETRY</span>`
+          : '';
+
+        return `
+          <div class="p-2.5 rounded-xl bg-panel border border-edge border-l-2 ${borderLeft} space-y-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5">
+                <span class="px-1.5 py-0.5 rounded border text-[10px] font-bold ${badge}">${item.status}</span>
+                <span class="text-slate-100 font-semibold">POST ${item.endpoint}</span>
+                ${encTag}
+                ${retryTag}
+              </div>
+              <span class="text-[10px] text-slate-500">${item.timestamp} · ${item.latencyMs}ms</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate">
+              {"traceId":"${item.traceId}","dispatch":"${item.target}","shard":"${item.workerPool}"}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 4. RESPONSIVE CANVAS SETUP
+    // =========================================================================
+    const pipelineCanvas = document.getElementById('pipeline-canvas');
+    const pCtx = pipelineCanvas.getContext('2d');
+    const pipelineWrapper = document.getElementById('pipeline-wrapper');
+
+    const sparkCanvas = document.getElementById('sparkline-canvas');
+    const sCtx = sparkCanvas.getContext('2d');
+    const sparkWrapper = document.getElementById('chart-wrapper');
+
+    function handleResize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      const pRect = pipelineWrapper.getBoundingClientRect();
+      pipelineCanvas.width = pRect.width * dpr;
+      pipelineCanvas.height = pRect.height * dpr;
+      pCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const sRect = sparkWrapper.getBoundingClientRect();
+      sparkCanvas.width = sRect.width * dpr;
+      sparkCanvas.height = sRect.height * dpr;
+      sCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener('resize', handleResize);
+
+    // =========================================================================
+    // 5. SIMULATION TICK & PACKET PHYSICS
+    // =========================================================================
+    function stepSimulation(dt) {
+      if (!sim.running) return;
+
+      // Refill token bucket
+      sim.tokens = Math.min(sim.burstCapacity, sim.tokens + sim.refillRate * dt);
+
+      // Calculate request arrivals for this time slice
+      const retryDrain = sim.backoffActive
+        ? Math.min(sim.backoffQueue, Math.ceil(sim.refillRate * 0.25 * dt))
+        : Math.min(sim.backoffQueue, Math.ceil(sim.refillRate * 0.08 * dt));
+      sim.backoffQueue = Math.max(0, sim.backoffQueue - retryDrain);
+
+      const totalIncomingSlice = sim.incomingRps * dt + retryDrain;
+
+      // 1. Zero-Trust Gate evaluation
+      const intrusionRatio = sim.intrusionActive ? 0.58 : 0.015;
+      const blockedSlice = totalIncomingSlice * intrusionRatio;
+      const authenticatedSlice = totalIncomingSlice - blockedSlice;
+
+      // 2. Token Bucket Rate Limiter evaluation
+      const allowedSlice = Math.min(sim.tokens, authenticatedSlice);
+      sim.tokens = Math.max(0, sim.tokens - allowedSlice);
+      const throttledSlice = Math.max(0, authenticatedSlice - allowedSlice);
+
+      // Queue portion of 429s into exponential backoff buffer
+      sim.backoffQueue = Math.min(4000, sim.backoffQueue + throttledSlice * (sim.backoffActive ? 0.85 : 0.45));
+
+      // Accumulate rolling metrics
+      sim.secOk += allowedSlice;
+      sim.sec429 += throttledSlice;
+      sim.sec403 += blockedSlice;
+
+      sim.total429 += Math.round(throttledSlice);
+      sim.total403 += Math.round(blockedSlice);
+      sim.totalEncrypted += Math.round(allowedSlice * 0.5);
+
+      // Worker saturation impacts P99 latency
+      const workerCapacity = sim.workers * 140;
+      const saturationRatio = sim.incomingRps / Math.max(1, workerCapacity);
+      const targetP99 = 16 + sim.jitterMs * 0.65 + Math.pow(Math.max(0, saturationRatio - 0.5), 1.6) * 45;
+      sim.p99Latency = Math.round(sim.p99Latency * 0.88 + targetP99 * 0.12);
+
+      // Spawn visual packets (capped at ~48 visual particles/sec for crisp 60fps rendering)
+      const visualSpawnRate = Math.min(48, Math.max(4, sim.incomingRps / 22));
+      sim.visualSpawnAcc += visualSpawnRate * dt;
+
+      while (sim.visualSpawnAcc >= 1) {
+        sim.visualSpawnAcc -= 1;
+        const route = API_ROUTES[Math.floor(Math.random() * API_ROUTES.length)];
+        const roll = Math.random();
+        const blockProb = totalIncomingSlice > 0 ? blockedSlice / totalIncomingSlice : 0;
+        const throttleProb = totalIncomingSlice > 0 ? throttledSlice / totalIncomingSlice : 0;
+
+        let kind = route.encrypted ? 'ENCRYPTED' : 'OK';
+        if (roll < blockProb) kind = '403';
+        else if (roll < blockProb + throttleProb) kind = '429';
+
+        sim.packets.push({
+          progress: 0,
+          speed: 0.78 + Math.random() * 0.25,
+          kind,
+          agentIdx: route.agentIdx
+        });
+      }
+
+      // Advance visual packets
+      for (let i = sim.packets.length - 1; i >= 0; i--) {
+        const p = sim.packets[i];
+        p.progress += p.speed * dt;
+        if (p.kind === '403' && p.progress >= 0.36) {
+          sim.packets.splice(i, 1);
+        } else if (p.kind === '429' && p.progress >= 0.62) {
+          sim.packets.splice(i, 1);
+        } else if (p.progress >= 1.0) {
+          sim.packets.splice(i, 1);
+        }
+      }
+
+      // Emit realistic JSON log entries periodically
+      sim.logEmitTimer += dt;
+      if (sim.logEmitTimer >= 0.28) {
+        sim.logEmitTimer = 0;
+        const route = API_ROUTES[Math.floor(Math.random() * API_ROUTES.length)];
+        let logStatus = 200;
+        if (sim.intrusionActive && Math.random() < 0.55) logStatus = 403;
+        else if (throttledSlice > allowedSlice * 0.2 && Math.random() < 0.55) logStatus = 429;
+
+        const sampleLatency = Math.max(8, sim.p99Latency * (0.65 + Math.random() * 0.45));
+        emitEventLog(logStatus, route, sampleLatency, sim.backoffActive && logStatus === 200);
+      }
+
+      // 1-Second Sparkline & KPI Rollup
+      sim.secTimer += dt;
+      if (sim.secTimer >= 1.0) {
+        sim.effectiveRps = Math.round(sim.secOk);
+        sim.history.push({
+          ok: Math.round(sim.secOk),
+          throttled: Math.round(sim.sec429),
+          blocked: Math.round(sim.sec403)
+        });
+        if (sim.history.length > 60) sim.history.shift();
+
+        sim.secOk = 0;
+        sim.sec429 = 0;
+        sim.sec403 = 0;
+        sim.secTimer = 0;
+      }
+
+      // Update KPI DOM
+      el.kpiRps.textContent = sim.effectiveRps.toLocaleString();
+      el.kpiP99.textContent = sim.p99Latency;
+      el.kpi429.textContent = sim.total429.toLocaleString();
+      el.kpiTokens.textContent = `${Math.floor(sim.tokens)} / ${sim.burstCapacity}`;
+      el.kpi403.textContent = sim.total403.toLocaleString();
+      el.kpiEncrypted.textContent = sim.totalEncrypted.toLocaleString();
+      el.retryReadout.textContent = `Backoff Queue: ${Math.round(sim.backoffQueue)} pkts`;
+
+      if (sim.intrusionActive) {
+        el.kpiGatePosture.textContent = 'UNDER ATTACK';
+        el.kpiGatePosture.className = 'text-rose-400 font-bold';
+      } else {
+        el.kpiGatePosture.textContent = 'VERIFIED';
+        el.kpiGatePosture.className = 'text-emerald-400 font-semibold';
+      }
+    }
+
+    // =========================================================================
+    // 6. CANVAS 2D RENDERERS (PIPELINE & SPARKLINE)
+    // =========================================================================
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function renderPipeline() {
+      const rect = pipelineWrapper.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      pCtx.clearRect(0, 0, w, h);
+
+      const cols = [w * 0.10, w * 0.30, w * 0.51, w * 0.71, w * 0.89];
+      const midY = h * 0.5;
+
+      const spine = [
+        { x: cols[0], y: midY, title: 'INGRESS',      sub: `${sim.incomingRps} RPS`, color: '#38bdf8' },
+        { x: cols[1], y: midY, title: 'ZERO-TRUST',   sub: 'HMAC Gate',             color: sim.intrusionActive ? '#f43f5e' : '#10b981' },
+        { x: cols[2], y: midY, title: 'TOKEN BUCKET', sub: `${Math.floor(sim.tokens)} tkns`, color: '#f59e0b' },
+        { x: cols[3], y: midY, title: 'REDIS POOL',   sub: `${sim.workers} workers`, color: '#a855f7' }
+      ];
+
+      const agents = [
+        { x: cols[4], y: h * 0.17, title: 'SI-OPTIMUS',  sub: 'Orchestrator', color: '#10b981' },
+        { x: cols[4], y: h * 0.39, title: 'TS-NODE SDK', sub: 'fern-ts',      color: '#06b6d4' },
+        { x: cols[4], y: h * 0.61, title: 'PYTHON SDK',  sub: 'fern-py',      color: '#a855f7' },
+        { x: cols[4], y: h * 0.83, title: 'ADB BRIDGE',  sub: 'Android APK',  color: '#f59e0b' }
+      ];
+
+      // Draw spine tracks
+      pCtx.lineWidth = 2;
+      for (let i = 0; i < spine.length - 1; i++) {
+        pCtx.strokeStyle = 'rgba(6, 182, 212, 0.28)';
+        pCtx.beginPath();
+        pCtx.moveTo(spine[i].x, spine[i].y);
+        pCtx.lineTo(spine[i + 1].x, spine[i + 1].y);
+        pCtx.stroke();
+      }
+
+      // Draw fan-out bezier curves to Multi-Agent targets
+      agents.forEach(ag => {
+        pCtx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+        pCtx.lineWidth = 1.75;
+        pCtx.beginPath();
+        pCtx.moveTo(spine[3].x, spine[3].y);
+        const cx = (spine[3].x + ag.x) * 0.5;
+        pCtx.bezierCurveTo(cx, spine[3].y, cx, ag.y, ag.x, ag.y);
+        pCtx.stroke();
+      });
+
+      // Draw animated packets
+      sim.packets.forEach(pkt => {
+        let px = 0;
+        let py = 0;
+
+        if (pkt.progress < 0.25) {
+          const t = pkt.progress / 0.25;
+          px = spine[0].x + (spine[1].x - spine[0].x) * t;
+          py = midY;
+        } else if (pkt.progress < 0.50) {
+          const t = (pkt.progress - 0.25) / 0.25;
+          px = spine[1].x + (spine[2].x - spine[1].x) * t;
+          py = midY + (pkt.kind === '403' ? t * 52 : 0);
+        } else if (pkt.progress < 0.75) {
+          const t = (pkt.progress - 0.50) / 0.25;
+          px = spine[2].x + (spine[3].x - spine[2].x) * t;
+          py = midY + (pkt.kind === '429' ? -t * 52 : 0);
+        } else {
+          const t = (pkt.progress - 0.75) / 0.25;
+          const ag = agents[pkt.agentIdx];
+          const cx = (spine[3].x + ag.x) * 0.5;
+          const it = 1 - t;
+          px = it*it*it*spine[3].x + 3*it*it*t*cx + 3*it*t*t*cx + t*t*t*ag.x;
+          py = it*it*it*spine[3].y + 3*it*it*t*spine[3].y + 3*it*t*t*ag.y + t*t*t*ag.y;
+        }
+
+        let color = '#10b981'; // Green = 200 OK
+        if (pkt.kind === 'ENCRYPTED') color = '#06b6d4'; // Cyan = Encrypted Stream
+        if (pkt.kind === '403' && pkt.progress >= 0.25) color = '#f43f5e'; // Red = 403 Rejected
+        if (pkt.kind === '429' && pkt.progress >= 0.50) color = '#f59e0b'; // Amber = 429 Throttled
+
+        pCtx.save();
+        pCtx.fillStyle = color;
+        pCtx.shadowColor = color;
+        pCtx.shadowBlur = 10;
+        pCtx.beginPath();
+        pCtx.arc(px, py, 4, 0, Math.PI * 2);
+        pCtx.fill();
+        pCtx.restore();
+      });
+
+      // Draw Pipeline Stage Cards
+      const cardW = Math.min(116, w * 0.165);
+      const cardH = 54;
+
+      function drawNode(n) {
+        const x = n.x - cardW / 2;
+        const y = n.y - cardH / 2;
+
+        pCtx.save();
+        pCtx.fillStyle = '#0f172a';
+        pCtx.strokeStyle = n.color;
+        pCtx.lineWidth = 1.5;
+        roundRect(pCtx, x, y, cardW, cardH, 10);
+        pCtx.fill();
+        pCtx.stroke();
+
+        pCtx.fillStyle = n.color;
+        pCtx.fillRect(x + 12, y, cardW - 24, 2.5);
+
+        pCtx.fillStyle = '#f8fafc';
+        pCtx.font = '700 10px "JetBrains Mono", monospace';
+        pCtx.textAlign = 'center';
+        pCtx.fillText(n.title, n.x, n.y - 3);
+
+        pCtx.fillStyle = '#94a3b8';
+        pCtx.font = '500 9.5px "JetBrains Mono", monospace';
+        pCtx.fillText(n.sub, n.x, n.y + 13);
+        pCtx.restore();
+      }
+
+      spine.forEach(drawNode);
+      agents.forEach(drawNode);
+    }
+
+    function renderSparkline() {
+      const rect = sparkWrapper.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      sCtx.clearRect(0, 0, w, h);
+
+      const padL = 42;
+      const padR = 14;
+      const padT = 16;
+      const padB = 24;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      let maxVal = 100;
+      sim.history.forEach(pt => {
+        maxVal = Math.max(maxVal, pt.ok + pt.throttled + pt.blocked + 40);
+      });
+
+      // Grid lines & Y-axis labels
+      sCtx.strokeStyle = 'rgba(30, 41, 59, 0.6)';
+      sCtx.lineWidth = 1;
+      sCtx.font = '10px "JetBrains Mono", monospace';
+      sCtx.fillStyle = '#64748b';
+      sCtx.textAlign = 'right';
+
+      for (let i = 0; i <= 4; i++) {
+        const val = Math.round((maxVal / 4) * i);
+        const y = padT + plotH - (plotH * (i / 4));
+        sCtx.beginPath();
+        sCtx.moveTo(padL, y);
+        sCtx.lineTo(w - padR, y);
+        sCtx.stroke();
+        sCtx.fillText(String(val), padL - 6, y + 3);
+      }
+
+      function drawLine(key, stroke, fill) {
+        sCtx.save();
+        sCtx.beginPath();
+        sim.history.forEach((pt, idx) => {
+          const x = padL + plotW * (idx / (sim.history.length - 1));
+          const y = padT + plotH - plotH * (pt[key] / maxVal);
+          if (idx === 0) sCtx.moveTo(x, y);
+          else sCtx.lineTo(x, y);
+        });
+        sCtx.strokeStyle = stroke;
+        sCtx.lineWidth = 2;
+        sCtx.stroke();
+
+        if (fill) {
+          sCtx.lineTo(padL + plotW, padT + plotH);
+          sCtx.lineTo(padL, padT + plotH);
+          sCtx.closePath();
+          sCtx.fillStyle = fill;
+          sCtx.fill();
+        }
+        sCtx.restore();
+      }
+
+      drawLine('ok', '#10b981', 'rgba(16, 185, 129, 0.14)');
+      drawLine('throttled', '#f59e0b', null);
+      drawLine('blocked', '#f43f5e', null);
+    }
+
+    // =========================================================================
+    // 7. ANIMATION LOOP (WINDOW ONLOAD)
+    // =========================================================================
+    function animate(now) {
+      const dt = Math.min(0.05, (now - sim.lastTime) / 1000);
+      sim.lastTime = now;
+
+      stepSimulation(dt);
+      renderPipeline();
+      renderSparkline();
+
+      requestAnimationFrame(animate);
+    }
+
+    window.onload = function () {
+      handleResize();
+      syncControls();
+      renderSpecModal('api');
+
+      emitEventLog(200, API_ROUTES[0], 19, false);
+      emitEventLog(200, API_ROUTES[3], 23, false);
+
+      sim.lastTime = performance.now();
+      requestAnimationFrame(animate);
+    };
+  </script>
+</body>
+</html>
