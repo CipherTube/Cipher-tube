@@ -1,0 +1,18 @@
+name: Optimus tests
+on:
+  pull_request:
+    paths: ['src/optimus/**', 'tests/optimus.test.ts', 'jest.optimus.config.cjs']
+  push:
+    branches: [main]
+    paths: ['src/optimus/**', 'tests/optimus.test.ts', 'jest.optimus.config.cjs']
+permissions:
+  contents: read
+jobs:
+  optimus:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          git init -q . && git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth 1 origin "${GITHUB_SHA}" && git checkout -q FETCH_HEAD
+      - run: npm i --no-save --no-audit --no-fund jest@29 ts-jest@29 typescript@5.4 @types/jest@29 @types/node@20
+      - run: npx jest -c jest.optimus.config.cjs --ci
