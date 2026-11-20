@@ -1,0 +1,19 @@
+name: Gateway tests
+on:
+  pull_request:
+    paths: ['packages/gateway/**']
+  push:
+    branches: [main]
+    paths: ['packages/gateway/**']
+permissions:
+  contents: read
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          git init -q . && git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth 1 origin "${GITHUB_SHA}" && git checkout -q FETCH_HEAD
+      - run: npm i --no-save --no-audit --no-fund jest@29.7.0 ts-jest@29.1.2 typescript@5.4.5 @types/jest@29.5.12 @types/node@20.14.0
+      - run: ls node_modules/jest/bin/jest.js node_modules/jest-util/package.json
+      - run: node node_modules/jest/bin/jest.js -c packages/gateway/jest.config.cjs --ci
