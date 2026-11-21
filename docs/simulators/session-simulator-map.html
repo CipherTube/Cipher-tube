@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CypherTube — Interactive Session Simulator &amp; Topology Map</title>
+<style>
+:root{--bg:#0b0f17;--panel:#121926;--panel-2:#182234;--border:#26344d;--text:#e6edf7;--muted:#93a4be;--accent:#38bdf8;--accent-2:#a78bfa;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;background:var(--panel);border-bottom:1px solid var(--border)}
+.brand{display:flex;flex-direction:column;gap:2px}
+.brand h1{margin:0;font-size:1.15rem;letter-spacing:.02em}
+.brand span{font-size:.82rem;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,select,input{background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.85rem}
+button{cursor:pointer;font-weight:600;transition:background .15s ease,border-color .15s ease}
+button:hover{background:#202d45;border-color:var(--accent)}
+button.primary{background:#0284c7;border-color:#38bdf8;color:#fff}
+button.primary:hover{background:#0369a1}
+button.danger{background:#7f1d1d;border-color:#ef4444;color:#fecaca}
+main{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;padding:20px 24px;max-width:1440px;margin:0 auto}
+@media (max-width:980px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.card-header h2{margin:0;font-size:.98rem}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.76rem;font-weight:700;border:1px solid transparent}
+.state-PENDING{background:rgba(245,158,11,.15);color:#fcd34d;border-color:rgba(245,158,11,.4)}
+.state-ACTIVE{background:rgba(34,197,94,.15);color:#86efac;border-color:rgba(34,197,94,.4)}
+.state-ROTATING{background:rgba(56,189,248,.15);color:#7dd3fc;border-color:rgba(56,189,248,.4)}
+.state-EXPIRED,.state-REVOKED,.state-LOCKED{background:rgba(239,68,68,.15);color:#fca5a5;border-color:rgba(239,68,68,.4)}
+.controls-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px;margin-bottom:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.75rem;color:var(--muted)}
+.op-bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.map-canvas{position:relative;background:radial-gradient(circle at top left,rgba(56,189,248,.08),transparent 55%),var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:290px}
+.map-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:14px}
+@media (max-width:600px){.map-grid{grid-template-columns:1fr}}
+.node{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;transition:transform .12s ease,border-color .12s ease}
+.node:hover{transform:translateY(-1px);border-color:var(--accent)}
+.node.selected{border-color:var(--accent-2);box-shadow:0 0 0 1px var(--accent-2)}
+.node-title{font-weight:700;font-size:.9rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.node-sub{font-size:.76rem;color:var(--muted)}
+.kv-list{display:grid;grid-template-columns:140px 1fr;gap:6px 10px;font-size:.84rem}
+.kv-key{color:var(--muted)}
+.kv-val{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}
+.log-box{max-height:310px;overflow:auto;background:#090d14;border:1px solid var(--border);border-radius:8px;padding:10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.76rem}
+.log-entry{padding:6px 8px;border-bottom:1px solid rgba(38,52,77,.55)}
+.log-entry:last-child{border-bottom:none}
+.log-ok{color:#86efac}
+.log-err{color:#fca5a5}
+.status-toast{font-size:.8rem;color:var(--accent)}
+@media print{body{background:#fff;color:#111}header .actions,.op-bar,.controls-grid button{display:none!important}header,.card,.node,.log-box{background:#fff!important;color:#111!important;border-color:#cbd5e1!important;box-shadow:none!important}main{grid-template-columns:1fr;max-width:100%;padding:10px}.log-box{max-height:none;overflow:visible}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>CypherTube Session Simulator &amp; Topology Map</h1>
+    <span>Interactive state machine, device/ownership map, shareable URL hash, and PDF export</span>
+  </div>
+  <div class="actions">
+    <button id="btnShare" class="primary" type="button">Copy Share Link</button>
+    <button id="btnPdf" type="button">Print / Save PDF</button>
+    <button id="btnReset" class="danger" type="button">Reset Simulation</button>
+    <span id="toast" class="status-toast" aria-live="polite"></span>
+  </div>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <div class="card-header"><h2>1. Session Controls &amp; Operations</h2><span id="stateBadge" class="badge state-ACTIVE">ACTIVE</span></div>
+      <div class="controls-grid">
+        <div class="field"><label for="inpUserId">Session User ID</label><input id="inpUserId" type="text" value="user-101" /></div>
+        <div class="field"><label for="inpOwnerId">Owner User ID</label><input id="inpOwnerId" type="text" value="user-101" /></div>
+        <div class="field"><label for="inpActorId">Requesting Actor ID</label><input id="inpActorId" type="text" value="user-101" /></div>
+        <div class="field"><label for="inpDeviceId">Bound Device ID</label><input id="inpDeviceId" type="text" value="adb-emu-5554" /></div>
+        <div class="field"><label for="inpReqDeviceId">Request Device ID</label><input id="inpReqDeviceId" type="text" value="adb-emu-5554" /></div>
+        <div class="field"><label for="inpTtl">TTL (seconds)</label><input id="inpTtl" type="number" min="5" max="86400" value="3600" /></div>
+      </div>
+      <div class="op-bar">
+        <button id="opCreate" class="primary" type="button">POST /sessions (Create)</button>
+        <button id="opValidate" type="button">POST /validate</button>
+        <button id="opRefresh" type="button">POST /refresh (+TTL / Rotate)</button>
+        <button id="opTick" type="button">Advance TTL (-300s)</button>
+        <button id="opExpire" type="button">Force EXPIRED</button>
+        <button id="opRevoke" class="danger" type="button">POST /revoke</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>2. Interactive System &amp; Session Map</h2><span style="font-size:.78rem;color:var(--muted);">Click a node to inspect</span></div>
+      <div class="map-canvas">
+        <div class="map-grid">
+          <div class="node selected" data-node="runner">
+            <div class="node-title"><span>ADB / Harness Client</span><span id="mapDeviceStatus" class="badge state-ACTIVE">BOUND</span></div>
+            <div class="node-sub" id="mapRunnerDesc">Device: adb-emu-5554 · Actor: user-101</div>
+          </div>
+          <div class="node" data-node="guard">
+            <div class="node-title"><span>Auth &amp; Ownership Guard</span><span id="mapGuardStatus" class="badge state-ACTIVE">VERIFIED</span></div>
+            <div class="node-sub" id="mapGuardDesc">Enforces ownerUserId &amp; deviceId match</div>
+          </div>
+          <div class="node" data-node="store">
+            <div class="node-title"><span>Session State Store</span><span id="mapStoreStatus" class="badge state-ACTIVE">ACTIVE</span></div>
+            <div class="node-sub" id="mapStoreDesc">v1 · TTL remaining: 3600s</div>
+          </div>
+          <div class="node" data-node="telemetry">
+            <div class="node-title"><span>Telemetry &amp; Replay Stream</span><span id="mapTelemetryStatus" class="badge state-ROTATING">0 EVENTS</span></div>
+            <div class="node-sub" id="mapTelemetryDesc">JSONL trace &amp; threshold evaluator</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px;">Selected Node Inspector</div>
+          <div id="nodeInspector" class="kv-list"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section>
+    <div class="card">
+      <div class="card-header"><h2>3. Current SessionRecord Snapshot</h2><span id="sessionIdLabel" style="font-family:monospace;font-size:.8rem;color:var(--accent);"></span></div>
+      <div id="sessionSnapshot" class="kv-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>4. Simulation Event Log (JSONL)</h2><span id="eventCountLabel" style="font-size:.8rem;color:var(--muted);">0 events</span></div>
+      <div id="eventLog" class="log-box"></div>
+    </div>
+  </section>
+</main>
+<script>
+const TERMINAL_STATES=new Set(["EXPIRED","REVOKED","LOCKED"]);
+const defaultState=()=>({selectedNode:"runner",session:{sessionId:"sess_"+Math.random().toString(36).slice(2,10),userId:"user-101",ownerUserId:"user-101",deviceId:"adb-emu-5554",state:"ACTIVE",version:1,lastReason:"CREATED",ttlSeconds:3600,remainingTtlSeconds:3600},request:{actorUserId:"user-101",requestDeviceId:"adb-emu-5554"},events:[]});
+let appState=loadFromHash()||defaultState();
+function encodeState(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
+function decodeState(b){return JSON.parse(decodeURIComponent(escape(atob(b))))}
+function saveToHash(){try{window.history.replaceState(null,"","#state="+encodeState(appState))}catch(_){window.location.hash="state="+encodeState(appState)}}
+function loadFromHash(){const h=window.location.hash||"";const m=h.match(/#state=(.+)$/);if(!m)return null;try{const p=decodeState(m[1]);if(p&&p.session&&Array.isArray(p.events))return p}catch(_){return null}return null}
+function showToast(msg){const el=document.getElementById("toast");el.textContent=msg;clearTimeout(showToast._t);showToast._t=setTimeout(()=>{el.textContent=""},3000)}
+function syncInputsFromState(){document.getElementById("inpUserId").value=appState.session.userId;document.getElementById("inpOwnerId").value=appState.session.ownerUserId;document.getElementById("inpDeviceId").value=appState.session.deviceId;document.getElementById("inpTtl").value=appState.session.ttlSeconds;document.getElementById("inpActorId").value=appState.request.actorUserId;document.getElementById("inpReqDeviceId").value=appState.request.requestDeviceId}
+function syncStateFromInputs(){appState.session.userId=document.getElementById("inpUserId").value.trim()||"user-101";appState.session.ownerUserId=document.getElementById("inpOwnerId").value.trim()||appState.session.userId;appState.session.deviceId=document.getElementById("inpDeviceId").value.trim()||"adb-emu-5554";appState.session.ttlSeconds=Math.max(5,Number(document.getElementById("inpTtl").value)||3600);appState.request.actorUserId=document.getElementById("inpActorId").value.trim()||"user-101";appState.request.requestDeviceId=document.getElementById("inpReqDeviceId").value.trim()||"adb-emu-5554"}
+function recordEvent(operation,ok,statusCode,errorCode,reason){appState.events.unshift({ts:new Date().toISOString(),operation,ok,statusCode,errorCode:errorCode||null,sessionId:appState.session.sessionId,state:appState.session.state,reason:reason||appState.session.lastReason,remainingTtlSeconds:appState.session.remainingTtlSeconds});if(appState.events.length>60)appState.events.length=60}
+function checkOwnershipAndDevice(){return{ownerOk:appState.request.actorUserId===appState.session.ownerUserId,deviceOk:appState.request.requestDeviceId===appState.session.deviceId}}
+function handleCreate(){syncStateFromInputs();appState.session={sessionId:"sess_"+Math.random().toString(36).slice(2,10),userId:appState.session.userId,ownerUserId:appState.session.ownerUserId,deviceId:appState.session.deviceId,state:"ACTIVE",version:1,lastReason:"CREATED",ttlSeconds:appState.session.ttlSeconds,remainingTtlSeconds:appState.session.ttlSeconds};recordEvent("createSession",true,200,null,"CREATED");render()}
+function handleValidate(){syncStateFromInputs();const{ownerOk,deviceOk}=checkOwnershipAndDevice();if(!ownerOk){appState.session.version+=1;appState.session.lastReason="OWNER_MISMATCH_LOCK";recordEvent("validateSession",false,403,"SESSION_OWNERSHIP_MISMATCH","OWNER_MISMATCH_LOCK");render();return}if(appState.session.state==="EXPIRED"||appState.session.remainingTtlSeconds<=0){appState.session.state="EXPIRED";appState.session.remainingTtlSeconds=0;appState.session.lastReason="TTL_ELAPSED";recordEvent("validateSession",false,410,"SESSION_EXPIRED","TTL_ELAPSED");render();return}if(appState.session.state==="REVOKED"){recordEvent("validateSession",false,410,"SESSION_REVOKED","EXPLICIT_REVOKE");render();return}if(!deviceOk){appState.session.version+=1;appState.session.lastReason="DEVICE_DRIFT_LOCK";recordEvent("validateSession",false,200,"DEVICE_MISMATCH","DEVICE_DRIFT_LOCK");render();return}appState.session.remainingTtlSeconds=appState.session.ttlSeconds;appState.session.version+=1;appState.session.lastReason="SLIDING_TTL_EXTENDED";recordEvent("validateSession",true,200,null,"SLIDING_TTL_EXTENDED");render()}
+function handleRefresh(){syncStateFromInputs();const{ownerOk}=checkOwnershipAndDevice();if(!ownerOk){recordEvent("refreshSession",false,403,"SESSION_OWNERSHIP_MISMATCH","OWNER_MISMATCH_LOCK");render();return}if(TERMINAL_STATES.has(appState.session.state)||appState.session.remainingTtlSeconds<=0){const errCode=appState.session.state==="REVOKED"?"SESSION_REVOKED":"SESSION_EXPIRED";recordEvent("refreshSession",false,410,errCode,appState.session.lastReason);render();return}appState.session.state="ACTIVE";appState.session.version+=1;appState.session.remainingTtlSeconds=appState.session.ttlSeconds;appState.session.lastReason="TOKEN_ROTATED";recordEvent("refreshSession",true,200,null,"TOKEN_ROTATED");render()}
+function handleTick(){syncStateFromInputs();if(appState.session.state!=="ACTIVE"){recordEvent("tickTtl",false,409,"INVALID_STATE_TRANSITION",appState.session.lastReason);render();return}appState.session.remainingTtlSeconds=Math.max(0,appState.session.remainingTtlSeconds-300);appState.session.version+=1;if(appState.session.remainingTtlSeconds===0){appState.session.state="EXPIRED";appState.session.lastReason="TTL_ELAPSED";recordEvent("tickTtl",false,410,"SESSION_EXPIRED","TTL_ELAPSED")}else{appState.session.lastReason="SLIDING_TTL_EXTENDED";recordEvent("tickTtl",true,200,null,"TTL_TICK_-300S")}render()}
+function handleExpire(){syncStateFromInputs();appState.session.state="EXPIRED";appState.session.remainingTtlSeconds=0;appState.session.version+=1;appState.session.lastReason="TTL_ELAPSED";recordEvent("expireSession",true,200,null,"TTL_ELAPSED");render()}
+function handleRevoke(){syncStateFromInputs();const{ownerOk}=checkOwnershipAndDevice();if(!ownerOk){recordEvent("revokeSession",false,403,"SESSION_OWNERSHIP_MISMATCH","OWNER_MISMATCH_LOCK");render();return}appState.session.state="REVOKED";appState.session.version+=1;appState.session.lastReason="EXPLICIT_REVOKE";recordEvent("revokeSession",true,200,null,"EXPLICIT_REVOKE");render()}
+function render(){saveToHash();const s=appState.session;const{ownerOk,deviceOk}=checkOwnershipAndDevice();const badge=document.getElementById("stateBadge");badge.className="badge state-"+s.state;badge.textContent=s.state;document.getElementById("sessionIdLabel").textContent=s.sessionId;const snapRows=[["state",s.state],["version",String(s.version)],["userId",s.userId],["ownerUserId",s.ownerUserId],["deviceId",s.deviceId],["lastReason",s.lastReason||"NONE"],["ttlSeconds",String(s.ttlSeconds)],["remainingTtl",s.remainingTtlSeconds+"s"]];document.getElementById("sessionSnapshot").innerHTML=snapRows.map(([k,v])=>`<div class="kv-key">${k}</div><div class="kv-val">${v}</div>`).join("");const devBadge=document.getElementById("mapDeviceStatus");devBadge.className="badge "+(deviceOk?"state-ACTIVE":"state-EXPIRED");devBadge.textContent=deviceOk?"MATCH":"DRIFT";document.getElementById("mapRunnerDesc").textContent=`Req Device: ${appState.request.requestDeviceId} · Actor: ${appState.request.actorUserId}`;const guardBadge=document.getElementById("mapGuardStatus");guardBadge.className="badge "+(ownerOk?"state-ACTIVE":"state-EXPIRED");guardBadge.textContent=ownerOk?"OWNER OK":"MISMATCH";document.getElementById("mapGuardDesc").textContent=`Owner: ${s.ownerUserId} · Actor: ${appState.request.actorUserId}`;const storeBadge=document.getElementById("mapStoreStatus");storeBadge.className="badge state-"+s.state;storeBadge.textContent=s.state;document.getElementById("mapStoreDesc").textContent=`v${s.version} · TTL remaining: ${s.remainingTtlSeconds}s`;const telBadge=document.getElementById("mapTelemetryStatus");telBadge.className="badge state-ROTATING";telBadge.textContent=`${appState.events.length} EVENTS`;document.getElementById("mapTelemetryDesc").textContent=`Last reason: ${s.lastReason||"NONE"}`;document.querySelectorAll(".node").forEach(el=>{el.classList.toggle("selected",el.dataset.node===appState.selectedNode)});const detailsByNode={runner:[["role","ADB / TS Replay Client"],["boundDeviceId",s.deviceId],["requestDeviceId",appState.request.requestDeviceId],["deviceMatch",String(deviceOk)]],guard:[["role","Ownership & Auth Policy"],["ownerUserId",s.ownerUserId],["actorUserId",appState.request.actorUserId],["ownershipMatch",String(ownerOk)]],store:[["role","Session State & TTL Store"],["sessionId",s.sessionId],["state",s.state],["version / TTL",`v${s.version} / ${s.remainingTtlSeconds}s`]],telemetry:[["role","JSONL Telemetry Stream"],["recordedEvents",String(appState.events.length)],["lastReason",s.lastReason||"NONE"],["shareHash","Synced to URL #state="]]};const rows=detailsByNode[appState.selectedNode]||detailsByNode.runner;document.getElementById("nodeInspector").innerHTML=rows.map(([k,v])=>`<div class="kv-key">${k}</div><div class="kv-val">${v}</div>`).join("");document.getElementById("eventCountLabel").textContent=`${appState.events.length} events`;document.getElementById("eventLog").innerHTML=appState.events.length?appState.events.map(ev=>{const cls=ev.ok?"log-ok":"log-err";return `<div class="log-entry ${cls}">${JSON.stringify(ev)}</div>`}).join(""):`<div class="log-entry" style="color:var(--muted);">No events recorded yet. Trigger an operation to stream JSONL events.</div>`}
+document.querySelectorAll(".node").forEach(node=>{node.addEventListener("click",()=>{appState.selectedNode=node.dataset.node;render()})});
+document.getElementById("opCreate").addEventListener("click",handleCreate);
+document.getElementById("opValidate").addEventListener("click",handleValidate);
+document.getElementById("opRefresh").addEventListener("click",handleRefresh);
+document.getElementById("opTick").addEventListener("click",handleTick);
+document.getElementById("opExpire").addEventListener("click",handleExpire);
+document.getElementById("opRevoke").addEventListener("click",handleRevoke);
+document.getElementById("btnShare").addEventListener("click",async()=>{render();const url=window.location.href;try{await navigator.clipboard.writeText(url);showToast("Shareable URL copied to clipboard.")}catch(_){showToast("URL hash updated; copy from address bar.")}});
+document.getElementById("btnPdf").addEventListener("click",()=>{render();window.print()});
+document.getElementById("btnReset").addEventListener("click",()=>{appState=defaultState();syncInputsFromState();render();showToast("Simulation reset.")});
+syncInputsFromState();render();
+</script>
+</body>
+</html>
