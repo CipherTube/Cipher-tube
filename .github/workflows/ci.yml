@@ -20,9 +20,14 @@ jobs:
     steps:
       - name: Checkout repository
         run: |
-          git clone --depth 1 \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" repo
-          cd repo && echo "commit: $(git rev-parse --short HEAD)"
+          # Check out the exact commit under test. A bare clone returns the
+          # default branch, so pull requests were validating main, not themselves.
+          git init -q repo && cd repo
+          git remote add origin \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch -q --depth 1 origin "${GITHUB_SHA}"
+          git checkout -q FETCH_HEAD
+          echo "commit: $(git rev-parse --short HEAD)"
 
       - name: Show toolchain
         run: |
@@ -35,6 +40,14 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip install pytest requests fastapi uvicorn pydantic
+
+      - name: Install Node dependencies
+        working-directory: repo
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: repo
+        run: npx tsc -p tsconfig.json --noEmit
 
       - name: Run C2PA verification tests
         working-directory: repo
