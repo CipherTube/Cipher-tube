@@ -128,7 +128,8 @@ main{display:grid;grid-template-columns:1.25fr 1fr;gap:18px;padding:20px 24px;ma
 </main>
 <script>
 const TERMINAL_STATES=new Set(["EXPIRED","REVOKED","LOCKED"]);
-const defaultState=()=>({selectedNode:"runner",session:{sessionId:"sess_"+Math.random().toString(36).slice(2,10),userId:"user-101",ownerUserId:"user-101",deviceId:"adb-emu-5554",state:"ACTIVE",version:1,lastReason:"CREATED",ttlSeconds:3600,remainingTtlSeconds:3600},request:{actorUserId:"user-101",requestDeviceId:"adb-emu-5554"},events:[]});
+function generateSessionId(){const bytes=new Uint8Array(8);window.crypto.getRandomValues(bytes);return "sess_"+Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")}
+const defaultState=()=>({selectedNode:"runner",session:{sessionId:generateSessionId(),userId:"user-101",ownerUserId:"user-101",deviceId:"adb-emu-5554",state:"ACTIVE",version:1,lastReason:"CREATED",ttlSeconds:3600,remainingTtlSeconds:3600},request:{actorUserId:"user-101",requestDeviceId:"adb-emu-5554"},events:[]});
 let appState=loadFromHash()||defaultState();
 function encodeState(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o))))}
 function decodeState(b){return JSON.parse(decodeURIComponent(escape(atob(b))))}
