@@ -36,6 +36,14 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install pytest requests fastapi uvicorn pydantic
 
+      - name: Install Node dependencies
+        working-directory: repo
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: repo
+        run: npx tsc -p tsconfig.json --noEmit
+
       - name: Run C2PA verification tests
         working-directory: repo
         env:
