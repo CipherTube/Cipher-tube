@@ -4,6 +4,7 @@
 Silently does nothing when CI_HUB_URL or CI_HUB_KEY are not configured, so the
 pipeline works with or without the hub.
 """
+
 from __future__ import annotations
 
 import json
@@ -27,7 +28,10 @@ def main():
         return 0
 
     stages = d.get("stages") or {}
-    body = "; ".join(f"{k} {v.get('conclusion')}" for k, v in stages.items()) or "no stages recorded"
+    body = (
+        "; ".join(f"{k} {v.get('conclusion')}" for k, v in stages.items())
+        or "no stages recorded"
+    )
     payload = {
         "action": "post",
         "room": "ciphertube",
@@ -42,7 +46,8 @@ def main():
         url,
         data=json.dumps(payload).encode(),
         headers={"content-type": "application/json", "x-hub-key": key},
-        method="POST")
+        method="POST",
+    )
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
             json.load(r)

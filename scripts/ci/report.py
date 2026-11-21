@@ -6,6 +6,7 @@ Usage:
     report.py gitleaks gitleaks.json --count # integer only
     report.py trivy   trivy.json --md out.md # markdown table row file
 """
+
 from __future__ import annotations
 
 import json
@@ -29,9 +30,11 @@ def bandit(d):
     rows = d.get("results", []) if isinstance(d, dict) else []
     lines = [f"bandit: {len(rows)} finding(s)"]
     for r in rows[:15]:
-        lines.append(f"  {r.get('severity','?'):8} {r.get('test_id','?'):8} "
-                     f"{r.get('filename','?')}:{r.get('line_number','?')} "
-                     f"{str(r.get('issue_text',''))[:70]}")
+        lines.append(
+            f"  {r.get('severity', '?'):8} {r.get('test_id', '?'):8} "
+            f"{r.get('filename', '?')}:{r.get('line_number', '?')} "
+            f"{str(r.get('issue_text', ''))[:70]}"
+        )
     return len(rows), lines
 
 
@@ -41,7 +44,9 @@ def gitleaks(d):
     rows = d if isinstance(d, list) else d.get("findings", [])
     lines = [f"gitleaks: {len(rows)} potential secret(s)"]
     for f in rows[:10]:
-        lines.append(f"  {f.get('RuleID','?')} {f.get('File','?')}:{f.get('StartLine','?')}")
+        lines.append(
+            f"  {f.get('RuleID', '?')} {f.get('File', '?')}:{f.get('StartLine', '?')}"
+        )
     return len(rows), lines
 
 
@@ -54,13 +59,17 @@ def trivy(d):
         for v in r.get("Vulnerabilities") or []:
             total += 1
             if total <= 10:
-                lines.append(f"  VULN {v.get('Severity','?'):8} {v.get('VulnerabilityID','?')} "
-                             f"{v.get('PkgName','?')} {v.get('InstalledVersion','?')}")
+                lines.append(
+                    f"  VULN {v.get('Severity', '?'):8} {v.get('VulnerabilityID', '?')} "
+                    f"{v.get('PkgName', '?')} {v.get('InstalledVersion', '?')}"
+                )
         for m in r.get("Misconfigurations") or []:
             total += 1
             if total <= 10:
-                lines.append(f"  MISC {m.get('Severity','?'):8} {m.get('ID','?')} "
-                             f"{str(m.get('Title',''))[:60]}")
+                lines.append(
+                    f"  MISC {m.get('Severity', '?'):8} {m.get('ID', '?')} "
+                    f"{str(m.get('Title', ''))[:60]}"
+                )
     lines.insert(0, f"trivy: {total} finding(s) at HIGH or CRITICAL")
     return total, lines
 
@@ -84,8 +93,10 @@ def pipaudit(d):
             vulns = dep.get("vulns") or []
             total += len(vulns)
             for v in vulns[:5]:
-                lines.append(f"  {dep.get('name','?')} {dep.get('version','?')} -> "
-                             f"{v.get('id','?')} fixed in {', '.join(v.get('fix_versions') or []) or 'no fix'}")
+                lines.append(
+                    f"  {dep.get('name', '?')} {dep.get('version', '?')} -> "
+                    f"{v.get('id', '?')} fixed in {', '.join(v.get('fix_versions') or []) or 'no fix'}"
+                )
     lines.insert(0, f"pip-audit: {total} known vulnerable package(s)")
     return total, lines
 

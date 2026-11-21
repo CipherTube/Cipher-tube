@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Print a trace record as an aligned plain-text block for the run summary."""
+
 from __future__ import annotations
 
 import json
@@ -15,13 +16,13 @@ def main():
     print(f"overall    {d.get('overall', '')}")
     print(f"hash       {d.get('record_hash', '')}")
     print(f"recorded   {d.get('recorded_at', '')}")
-    print("")
+    print()
     print("stages")
     for name, s in (d.get("stages") or {}).items():
-        print(f"  {name:26} {str(s.get('conclusion')):10} {s.get('duration_s')}s")
+        print(f"  {name:26} {s.get('conclusion')!s:10} {s.get('duration_s')}s")
     missing = d.get("missing_stages") or []
     if missing:
-        print("")
+        print()
         print("not run: " + ", ".join(missing))
     return 0
 

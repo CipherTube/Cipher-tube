@@ -5,6 +5,7 @@ Writes trace.json with every pipeline stage that ran against this commit,
 its conclusion, its duration, and a hash over the record so the file can be
 compared later without trusting the storage it sits in.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -14,14 +15,26 @@ import os
 import urllib.error
 import urllib.request
 
-WANTED = ("Analysis", "Scanners", "Autofix", "CipherTube CI", "Code Coverage",
-          "Build Container", "Container Job", "Build and Store Artifacts")
+WANTED = (
+    "Analysis",
+    "Scanners",
+    "Autofix",
+    "CipherTube CI",
+    "Code Coverage",
+    "Build Container",
+    "Container Job",
+    "Build and Store Artifacts",
+)
 
 
 def api(url, token):
     req = urllib.request.Request(
-        url, headers={"Authorization": f"Bearer {token}",
-                      "Accept": "application/vnd.github+json"})
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+        },
+    )
     with urllib.request.urlopen(req) as r:
         return json.load(r)
 
@@ -48,7 +61,9 @@ def main():
 
     stages = {}
     try:
-        runs = api(f"https://api.github.com/repos/{repo}/actions/runs?per_page=60", token)
+        runs = api(
+            f"https://api.github.com/repos/{repo}/actions/runs?per_page=60", token
+        )
         for r in runs.get("workflow_runs", []):
             if r.get("head_sha") != sha:
                 continue
@@ -73,8 +88,9 @@ def main():
         "recorded_at": datetime.datetime.utcnow().isoformat() + "Z",
         "stages": stages,
         "missing_stages": [s for s in WANTED if s not in stages],
-        "overall": "pass" if stages and all(
-            v["conclusion"] == "success" for v in stages.values()) else "review",
+        "overall": "pass"
+        if stages and all(v["conclusion"] == "success" for v in stages.values())
+        else "review",
     }
     blob = json.dumps(record, sort_keys=True).encode()
     record["record_hash"] = hashlib.sha256(blob).hexdigest()
@@ -82,9 +98,11 @@ def main():
     with open("trace.json", "w") as fh:
         json.dump(record, fh, indent=2)
 
-    print(f"commit {record['short']}  overall {record['overall']}  hash {record['record_hash'][:16]}")
+    print(
+        f"commit {record['short']}  overall {record['overall']}  hash {record['record_hash'][:16]}"
+    )
     for name, s in stages.items():
-        print(f"  {name:26} {str(s['conclusion']):10} {s['duration_s']}s")
+        print(f"  {name:26} {s['conclusion']!s:10} {s['duration_s']}s")
     return 0
 
 
